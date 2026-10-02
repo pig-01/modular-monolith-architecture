@@ -1,8 +1,8 @@
 using Mediator;
 using Microsoft.EntityFrameworkCore;
 using User.Application.Abstractions;
-using User.Application.Mapping;
 using User.Application.Commands;
+using User.Application.Mapping;
 using User.Domain.Entities;
 using User.Domain.Events;
 using User.Infrastructure;
@@ -23,7 +23,7 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, UserD
 
     public async ValueTask<UserDto> Handle(CreateUserCommand request, CancellationToken cancellationToken)
     {
-        var entity = new User.Domain.Entities.User(Guid.NewGuid(), request.Name, request.Email);
+        Domain.Entities.User entity = new(Guid.NewGuid(), request.Name, request.Email);
         await _dbContext.Users.AddAsync(entity, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
 

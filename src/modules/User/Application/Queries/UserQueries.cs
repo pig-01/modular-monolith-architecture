@@ -13,35 +13,23 @@ public sealed class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, IReadO
 {
     private readonly UserDbContext _dbContext;
 
-    public GetUsersQueryHandler(UserDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    public GetUsersQueryHandler(UserDbContext dbContext) => _dbContext = dbContext;
 
-    public async ValueTask<IReadOnlyList<UserDto>> Handle(GetUsersQuery request, CancellationToken cancellationToken)
-    {
-        return await _dbContext.Users
+    public async ValueTask<IReadOnlyList<UserDto>> Handle(GetUsersQuery request, CancellationToken cancellationToken) => await _dbContext.Users
             .AsNoTracking()
             .ProjectToDto()
             .ToListAsync(cancellationToken);
-    }
 }
 
 public sealed class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery, UserDto?>
 {
     private readonly UserDbContext _dbContext;
 
-    public GetUserByIdQueryHandler(UserDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    public GetUserByIdQueryHandler(UserDbContext dbContext) => _dbContext = dbContext;
 
-    public async ValueTask<UserDto?> Handle(GetUserByIdQuery request, CancellationToken cancellationToken)
-    {
-        return await _dbContext.Users
+    public async ValueTask<UserDto?> Handle(GetUserByIdQuery request, CancellationToken cancellationToken) => await _dbContext.Users
             .AsNoTracking()
             .Where(u => u.Id == request.Id)
             .ProjectToDto()
             .FirstOrDefaultAsync(cancellationToken);
-    }
 }

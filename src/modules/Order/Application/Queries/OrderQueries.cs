@@ -14,37 +14,25 @@ public sealed class GetOrdersQueryHandler : IRequestHandler<GetOrdersQuery, IRea
 {
     private readonly OrderDbContext _dbContext;
 
-    public GetOrdersQueryHandler(OrderDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    public GetOrdersQueryHandler(OrderDbContext dbContext) => _dbContext = dbContext;
 
-    public async ValueTask<IReadOnlyList<OrderDto>> Handle(GetOrdersQuery request, CancellationToken cancellationToken)
-    {
-        return await _dbContext.Orders
+    public async ValueTask<IReadOnlyList<OrderDto>> Handle(GetOrdersQuery request, CancellationToken cancellationToken) => await _dbContext.Orders
             .AsNoTracking()
             .Include(o => o.Items)
             .ProjectToDto()
             .ToListAsync(cancellationToken);
-    }
 }
 
 public sealed class GetOrderByIdQueryHandler : IRequestHandler<GetOrderByIdQuery, OrderDto?>
 {
     private readonly OrderDbContext _dbContext;
 
-    public GetOrderByIdQueryHandler(OrderDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    public GetOrderByIdQueryHandler(OrderDbContext dbContext) => _dbContext = dbContext;
 
-    public async ValueTask<OrderDto?> Handle(GetOrderByIdQuery request, CancellationToken cancellationToken)
-    {
-        return await _dbContext.Orders
+    public async ValueTask<OrderDto?> Handle(GetOrderByIdQuery request, CancellationToken cancellationToken) => await _dbContext.Orders
             .AsNoTracking()
             .Include(o => o.Items)
             .Where(o => o.Id == request.Id)
             .ProjectToDto()
             .FirstOrDefaultAsync(cancellationToken);
-    }
 }

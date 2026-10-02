@@ -9,14 +9,11 @@ public class RegisterDataSourceCommandHandler : IRequestHandler<RegisterDataSour
 {
     private readonly DataSourceDbContext _dbContext;
 
-    public RegisterDataSourceCommandHandler(DataSourceDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    public RegisterDataSourceCommandHandler(DataSourceDbContext dbContext) => _dbContext = dbContext;
 
     public async ValueTask<DataSourceDto> Handle(RegisterDataSourceCommand request, CancellationToken cancellationToken)
     {
-        var entity = new Domain.Entities.DataSource(
+        Domain.Entities.DataSource entity = new(
             Guid.NewGuid(),
             request.UserId,
             request.Name,

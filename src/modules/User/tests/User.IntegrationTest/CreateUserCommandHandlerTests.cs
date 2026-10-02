@@ -14,7 +14,7 @@ public class CreateUserCommandHandlerTests
     [Fact]
     public async Task Creates_user_and_returns_dto()
     {
-        var services = new ServiceCollection();
+        ServiceCollection services = new();
         services.AddLogging();
         services.AddDbContext<UserDbContext>(options => options.UseInMemoryDatabase("user-int-tests"));
         services.AddMediator((MediatorOptions options) => options.ServiceLifetime = ServiceLifetime.Scoped);

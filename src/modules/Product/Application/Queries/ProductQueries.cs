@@ -13,35 +13,23 @@ public sealed class GetProductsQueryHandler : IRequestHandler<GetProductsQuery, 
 {
     private readonly ProductDbContext _dbContext;
 
-    public GetProductsQueryHandler(ProductDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    public GetProductsQueryHandler(ProductDbContext dbContext) => _dbContext = dbContext;
 
-    public async ValueTask<IReadOnlyList<ProductDto>> Handle(GetProductsQuery request, CancellationToken cancellationToken)
-    {
-        return await _dbContext.Products
+    public async ValueTask<IReadOnlyList<ProductDto>> Handle(GetProductsQuery request, CancellationToken cancellationToken) => await _dbContext.Products
             .AsNoTracking()
             .ProjectToDto()
             .ToListAsync(cancellationToken);
-    }
 }
 
 public sealed class GetProductByIdQueryHandler : IRequestHandler<GetProductByIdQuery, ProductDto?>
 {
     private readonly ProductDbContext _dbContext;
 
-    public GetProductByIdQueryHandler(ProductDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    public GetProductByIdQueryHandler(ProductDbContext dbContext) => _dbContext = dbContext;
 
-    public async ValueTask<ProductDto?> Handle(GetProductByIdQuery request, CancellationToken cancellationToken)
-    {
-        return await _dbContext.Products
+    public async ValueTask<ProductDto?> Handle(GetProductByIdQuery request, CancellationToken cancellationToken) => await _dbContext.Products
             .AsNoTracking()
             .Where(p => p.Id == request.Id)
             .ProjectToDto()
             .FirstOrDefaultAsync(cancellationToken);
-    }
 }

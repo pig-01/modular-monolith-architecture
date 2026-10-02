@@ -14,7 +14,7 @@ public class CreateProductCommandHandlerTests
     [Fact]
     public async Task Creates_product_and_returns_dto()
     {
-        var services = new ServiceCollection();
+        ServiceCollection services = new();
         services.AddLogging();
         services.AddDbContext<ProductDbContext>(options => options.UseInMemoryDatabase("product-int-tests"));
         services.AddMediator((MediatorOptions options) => options.ServiceLifetime = ServiceLifetime.Scoped);

@@ -14,7 +14,7 @@ public class PlaceOrderCommandHandlerTests
     [Fact]
     public async Task Places_order_and_returns_dto()
     {
-        var services = new ServiceCollection();
+        ServiceCollection services = new();
         services.AddLogging();
         services.AddDbContext<OrderDbContext>(options => options.UseInMemoryDatabase("order-int-tests"));
         services.AddMediator((MediatorOptions options) => options.ServiceLifetime = ServiceLifetime.Scoped);

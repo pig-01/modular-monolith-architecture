@@ -2,8 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Order.Infrastructure;
 using Product.Infrastructure;
 using User.Infrastructure;
-using UserEntity = User.Domain.Entities.User;
 using ProductEntity = Product.Domain.Entities.Product;
+using UserEntity = User.Domain.Entities.User;
 
 var connectionString = "Data Source=localhost;Initial Catalog=ModularMonolithDemo;Integrated Security=SSPI;TrustServerCertificate=true;app=LINQPad";
 
@@ -17,7 +17,7 @@ static async Task EnsureUserDataAsync(string connectionString)
         .UseSqlServer(connectionString)
         .Options;
 
-    await using var context = new UserDbContext(options);
+    await using UserDbContext context = new(options);
     await context.Database.MigrateAsync();
 
     if (await context.Users.AnyAsync())
@@ -25,7 +25,7 @@ static async Task EnsureUserDataAsync(string connectionString)
         return;
     }
 
-    var users = Enumerable.Range(1, 10)
+    List<UserEntity> users = Enumerable.Range(1, 10)
         .Select(i => new UserEntity(Guid.NewGuid(), $"User {i}", $"user{i}@example.com"))
         .ToList();
 
@@ -39,7 +39,7 @@ static async Task EnsureProductDataAsync(string connectionString)
         .UseSqlServer(connectionString)
         .Options;
 
-    await using var context = new ProductDbContext(options);
+    await using ProductDbContext context = new(options);
     await context.Database.MigrateAsync();
 
     if (await context.Products.AnyAsync())
@@ -47,7 +47,7 @@ static async Task EnsureProductDataAsync(string connectionString)
         return;
     }
 
-    var products = Enumerable.Range(1, 30)
+    List<ProductEntity> products = Enumerable.Range(1, 30)
         .Select(i => new ProductEntity(Guid.NewGuid(), $"Product {i}", 10 + i))
         .ToList();
 
@@ -61,6 +61,6 @@ static async Task EnsureOrderDatabaseAsync(string connectionString)
         .UseSqlServer(connectionString)
         .Options;
 
-    await using var context = new OrderDbContext(options);
+    await using OrderDbContext context = new(options);
     await context.Database.MigrateAsync();
 }

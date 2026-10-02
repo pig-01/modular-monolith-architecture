@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 using User.Infrastructure.MultiTenant;
 
 namespace User.Application.MultiTenant;
@@ -12,13 +12,7 @@ public class JwtTenantProvider : ITenantProvider
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public JwtTenantProvider(IHttpContextAccessor httpContextAccessor)
-    {
-        _httpContextAccessor = httpContextAccessor;
-    }
+    public JwtTenantProvider(IHttpContextAccessor httpContextAccessor) => _httpContextAccessor = httpContextAccessor;
 
-    public string? GetTenantId()
-    {
-        return _httpContextAccessor.HttpContext?.User.FindFirstValue("tenant_id");
-    }
+    public string? GetTenantId() => _httpContextAccessor.HttpContext?.User.FindFirstValue("tenant_id");
 }

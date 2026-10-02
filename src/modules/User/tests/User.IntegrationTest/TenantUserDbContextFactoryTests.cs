@@ -26,7 +26,7 @@ public class TenantUserDbContextFactoryTests
 
     private static IOptions<TenantOptions> BuildTenantOptions()
     {
-        var options = new TenantOptions();
+        TenantOptions options = new();
         options.ConnectionStrings[TenantConstants.Default] = DefaultConnectionString;
         options.ConnectionStrings[TenantConstants.Premium] = PremiumConnectionString;
         return Options.Create(options);
@@ -44,7 +44,7 @@ public class TenantUserDbContextFactoryTests
         string tenantId,
         IOptions<TenantOptions>? tenantOptions = null,
         IConfiguration? configuration = null) =>
-        new TenantUserDbContextFactory(
+        new(
             new FakeTenantProvider(tenantId),
             tenantOptions ?? BuildTenantOptions(),
             configuration ?? BuildConfiguration());
@@ -125,11 +125,11 @@ public class TenantUserDbContextFactoryTests
     [Fact]
     public void GetTenantId_FromJwtClaim_ReturnsTenantId()
     {
-        var httpContext = new DefaultHttpContext();
+        DefaultHttpContext httpContext = new();
         httpContext.User = new ClaimsPrincipal(
             new ClaimsIdentity(new[] { new Claim("tenant_id", TenantConstants.Premium) }, "test"));
 
-        var provider = new HttpContextTenantProvider(new FakeHttpContextAccessor(httpContext));
+        HttpContextTenantProvider provider = new(new FakeHttpContextAccessor(httpContext));
 
         Assert.Equal(TenantConstants.Premium, provider.GetTenantId());
     }
@@ -137,10 +137,10 @@ public class TenantUserDbContextFactoryTests
     [Fact]
     public void GetTenantId_FromRequestHeader_ReturnsTenantId()
     {
-        var httpContext = new DefaultHttpContext();
+        DefaultHttpContext httpContext = new();
         httpContext.Request.Headers["X-Tenant-Id"] = TenantConstants.Premium;
 
-        var provider = new HttpContextTenantProvider(new FakeHttpContextAccessor(httpContext));
+        HttpContextTenantProvider provider = new(new FakeHttpContextAccessor(httpContext));
 
         Assert.Equal(TenantConstants.Premium, provider.GetTenantId());
     }
@@ -148,12 +148,12 @@ public class TenantUserDbContextFactoryTests
     [Fact]
     public void GetTenantId_JwtClaimTakesPrecedenceOverHeader()
     {
-        var httpContext = new DefaultHttpContext();
+        DefaultHttpContext httpContext = new();
         httpContext.User = new ClaimsPrincipal(
             new ClaimsIdentity(new[] { new Claim("tenant_id", TenantConstants.Premium) }, "test"));
         httpContext.Request.Headers["X-Tenant-Id"] = TenantConstants.Default;
 
-        var provider = new HttpContextTenantProvider(new FakeHttpContextAccessor(httpContext));
+        HttpContextTenantProvider provider = new(new FakeHttpContextAccessor(httpContext));
 
         Assert.Equal(TenantConstants.Premium, provider.GetTenantId());
     }
@@ -161,9 +161,9 @@ public class TenantUserDbContextFactoryTests
     [Fact]
     public void GetTenantId_NoClaimOrHeader_ReturnsDefault()
     {
-        var httpContext = new DefaultHttpContext();
+        DefaultHttpContext httpContext = new();
 
-        var provider = new HttpContextTenantProvider(new FakeHttpContextAccessor(httpContext));
+        HttpContextTenantProvider provider = new(new FakeHttpContextAccessor(httpContext));
 
         Assert.Equal(TenantConstants.Default, provider.GetTenantId());
     }
@@ -171,7 +171,7 @@ public class TenantUserDbContextFactoryTests
     [Fact]
     public void GetTenantId_NullHttpContext_ReturnsDefault()
     {
-        var provider = new HttpContextTenantProvider(new FakeHttpContextAccessor(null));
+        HttpContextTenantProvider provider = new(new FakeHttpContextAccessor(null));
 
         Assert.Equal(TenantConstants.Default, provider.GetTenantId());
     }
@@ -191,4 +191,3 @@ public class TenantUserDbContextFactoryTests
         public FakeHttpContextAccessor(HttpContext? context) => HttpContext = context;
     }
 }
-
