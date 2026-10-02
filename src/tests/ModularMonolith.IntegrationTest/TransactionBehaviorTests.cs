@@ -25,9 +25,9 @@ public class TransactionBehaviorTests
             "Order" => new Order.Application.Pipeline.TransactionBehavior<CreateProductCommand, ProductDto>(),
             _ => new DataSource.Application.Pipeline.TransactionBehavior<CreateProductCommand, ProductDto>()
         };
-        var request = new CreateProductCommand("Gadget", 10m);
-        var response = new ProductDto(Guid.NewGuid(), request.Name, request.Price);
-        using var cancellation = new CancellationTokenSource();
+        CreateProductCommand request = new("Gadget", 10m);
+        ProductDto response = new(Guid.NewGuid(), request.Name, request.Price);
+        using CancellationTokenSource cancellation = new();
         TransactionStatus? completionStatus = null;
 
         async ValueTask<ProductDto> Next(CreateProductCommand message, CancellationToken token)
@@ -44,10 +44,14 @@ public class TransactionBehaviorTests
         }
 
         if (fail)
+        {
             await Assert.ThrowsAsync<InvalidOperationException>(() =>
                 behavior.Handle(request, Next, cancellation.Token).AsTask());
+        }
         else
+        {
             Assert.Same(response, await behavior.Handle(request, Next, cancellation.Token));
+        }
 
         Assert.Equal(fail ? TransactionStatus.Aborted : TransactionStatus.Committed, completionStatus);
         Assert.Null(Transaction.Current);

@@ -10,17 +10,16 @@ public class InMemoryTenantConnectionStringResolver : ITenantConnectionStringRes
 {
     private readonly IConfiguration _configuration;
 
-    public InMemoryTenantConnectionStringResolver(IConfiguration configuration)
-    {
-        _configuration = configuration;
-    }
+    public InMemoryTenantConnectionStringResolver(IConfiguration configuration) => _configuration = configuration;
 
     public string Resolve(string tenantId)
     {
         var connStr = _configuration[$"Tenants:{tenantId}"];
         if (string.IsNullOrEmpty(connStr))
+        {
             throw new InvalidOperationException(
                 $"Tenant '{tenantId}' is not configured. Add it to the 'Tenants' section in appsettings.json.");
+        }
 
         return connStr;
     }

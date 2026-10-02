@@ -1,4 +1,4 @@
-﻿namespace User.Infrastructure.MultiTenant;
+namespace User.Infrastructure.MultiTenant;
 
 public interface ITenantProvider
 {

@@ -8,10 +8,7 @@ public class DeleteDataSourceCommandHandler : IRequestHandler<DeleteDataSourceCo
 {
     private readonly DataSourceDbContext _dbContext;
 
-    public DeleteDataSourceCommandHandler(DataSourceDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    public DeleteDataSourceCommandHandler(DataSourceDbContext dbContext) => _dbContext = dbContext;
 
     public async ValueTask<bool> Handle(DeleteDataSourceCommand request, CancellationToken cancellationToken)
     {

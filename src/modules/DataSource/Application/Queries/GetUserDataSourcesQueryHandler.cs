@@ -10,19 +10,13 @@ public class GetUserDataSourcesQueryHandler : IRequestHandler<GetUserDataSources
 {
     private readonly DataSourceDbContext _dbContext;
 
-    public GetUserDataSourcesQueryHandler(DataSourceDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    public GetUserDataSourcesQueryHandler(DataSourceDbContext dbContext) => _dbContext = dbContext;
 
     public async ValueTask<IReadOnlyList<DataSourceDto>> Handle(
         GetUserDataSourcesQuery request,
-        CancellationToken cancellationToken)
-    {
-        return await _dbContext.DataSources
+        CancellationToken cancellationToken) => await _dbContext.DataSources
             .Where(ds => ds.UserId == request.UserId)
             .AsNoTracking()
             .ProjectToDto()
             .ToListAsync(cancellationToken);
-    }
 }

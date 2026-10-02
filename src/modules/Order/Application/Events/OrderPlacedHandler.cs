@@ -8,10 +8,7 @@ public class OrderPlacedHandler : INotificationHandler<OrderPlaced>
 {
     private readonly ILogger<OrderPlacedHandler> _logger;
 
-    public OrderPlacedHandler(ILogger<OrderPlacedHandler> logger)
-    {
-        _logger = logger;
-    }
+    public OrderPlacedHandler(ILogger<OrderPlacedHandler> logger) => _logger = logger;
 
     public ValueTask Handle(OrderPlaced notification, CancellationToken cancellationToken)
     {

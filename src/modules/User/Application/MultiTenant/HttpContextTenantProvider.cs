@@ -18,10 +18,7 @@ public class HttpContextTenantProvider : ITenantProvider
 
     private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public HttpContextTenantProvider(IHttpContextAccessor httpContextAccessor)
-    {
-        _httpContextAccessor = httpContextAccessor;
-    }
+    public HttpContextTenantProvider(IHttpContextAccessor httpContextAccessor) => _httpContextAccessor = httpContextAccessor;
 
     public string GetTenantId()
     {
@@ -35,7 +32,9 @@ public class HttpContextTenantProvider : ITenantProvider
 
         if (context.Request.Headers.TryGetValue(TenantIdHeaderName, out var headerValue)
             && !string.IsNullOrWhiteSpace(headerValue))
+        {
             return headerValue.ToString();
+        }
 
         return TenantConstants.Default;
     }

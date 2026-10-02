@@ -21,8 +21,8 @@ public class PlaceOrderCommandHandler : IRequestHandler<PlaceOrderCommand, Order
 
     public async ValueTask<OrderDto> Handle(PlaceOrderCommand request, CancellationToken cancellationToken)
     {
-        var items = request.Items.Select(i => new OrderItem(i.ProductId, i.Quantity, i.Price)).ToList();
-        var order = new Order.Domain.Entities.Order(Guid.NewGuid(), request.UserId, items);
+        List<OrderItem> items = request.Items.Select(i => new OrderItem(i.ProductId, i.Quantity, i.Price)).ToList();
+        Domain.Entities.Order order = new(Guid.NewGuid(), request.UserId, items);
 
         await _dbContext.Orders.AddAsync(order, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);

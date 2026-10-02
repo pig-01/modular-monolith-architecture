@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 namespace User.Infrastructure.MultiTenant;
 
@@ -35,7 +35,7 @@ public class TenantUserDbContextFactory
             .UseSqlServer(connStr)
             .Options;
 
-        var ctx = new UserDbContext(options);
+        UserDbContext ctx = new(options);
 
         EnsureMigratedAsync(ctx, tenantId).GetAwaiter().GetResult();
 

@@ -8,7 +8,7 @@ public class PlaceOrderCommandValidatorTests
     [Fact]
     public void Empty_items_fail_validation()
     {
-        var validator = new PlaceOrderCommandValidator();
+        PlaceOrderCommandValidator validator = new();
         var result = validator.Validate(new PlaceOrderCommand(Guid.NewGuid(), Array.Empty<PlaceOrderItem>()));
         Assert.False(result.IsValid);
     }

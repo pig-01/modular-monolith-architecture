@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using DataSource.Application.Commands;
 using DataSource.Application.Queries;
 using DataSource.Application.Services;
@@ -6,7 +7,6 @@ using Mediator;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using System.Security.Claims;
 
 namespace DataSource.Application.Endpoints;
 
@@ -20,7 +20,7 @@ public static class DataSourceEndpoints
         group.MapPost("/", async (RegisterDataSourceRequest body, HttpContext ctx, IMediator mediator) =>
         {
             var userId = GetUserId(ctx);
-            var command = new RegisterDataSourceCommand(userId, body.Name, body.Provider, body.ConnectionString);
+            RegisterDataSourceCommand command = new(userId, body.Name, body.Provider, body.ConnectionString);
             var result = await mediator.Send(command);
             return Results.Created($"/datasources/{result.Id}", result);
         })

@@ -8,10 +8,7 @@ public class ProductCreatedHandler : INotificationHandler<ProductCreated>
 {
     private readonly ILogger<ProductCreatedHandler> _logger;
 
-    public ProductCreatedHandler(ILogger<ProductCreatedHandler> logger)
-    {
-        _logger = logger;
-    }
+    public ProductCreatedHandler(ILogger<ProductCreatedHandler> logger) => _logger = logger;
 
     public ValueTask Handle(ProductCreated notification, CancellationToken cancellationToken)
     {

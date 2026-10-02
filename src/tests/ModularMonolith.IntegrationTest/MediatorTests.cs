@@ -31,7 +31,7 @@ public class MediatorTests
     [Fact]
     public async Task Host_dispatches_commands_queries_and_domain_events_for_all_modules()
     {
-        var log = new EventLog();
+        EventLog log = new();
         using var provider = BuildProvider(log);
         using var scope = provider.CreateScope();
         var services = scope.ServiceProvider;
@@ -98,7 +98,7 @@ public class MediatorTests
         using var provider = BuildProvider();
         using var scope = provider.CreateScope();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-        using var cancellation = new CancellationTokenSource();
+        using CancellationTokenSource cancellation = new();
         cancellation.Cancel();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
@@ -142,7 +142,7 @@ public class MediatorTests
             {
                 ["ConnectionStrings:DefaultConnection"] = "Server=unused;Database=unused"
             }).Build();
-        var services = new ServiceCollection();
+        ServiceCollection services = new();
         services.AddSingleton<IConfiguration>(configuration);
         services.AddLogging(builder => builder.AddProvider(log ?? new EventLog()));
         services.AddUserModule(configuration);
