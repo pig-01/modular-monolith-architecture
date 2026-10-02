@@ -1,5 +1,6 @@
 using Mediator;
 using Microsoft.EntityFrameworkCore;
+using Product.Application.Mapping;
 using Product.Infrastructure;
 
 namespace Product.Application.Queries;
@@ -21,7 +22,7 @@ public sealed class GetProductsQueryHandler : IRequestHandler<GetProductsQuery, 
     {
         return await _dbContext.Products
             .AsNoTracking()
-            .Select(p => new ProductDto(p.Id, p.Name, p.Price))
+            .ProjectToDto()
             .ToListAsync(cancellationToken);
     }
 }
@@ -40,7 +41,7 @@ public sealed class GetProductByIdQueryHandler : IRequestHandler<GetProductByIdQ
         return await _dbContext.Products
             .AsNoTracking()
             .Where(p => p.Id == request.Id)
-            .Select(p => new ProductDto(p.Id, p.Name, p.Price))
+            .ProjectToDto()
             .FirstOrDefaultAsync(cancellationToken);
     }
 }

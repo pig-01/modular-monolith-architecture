@@ -1,5 +1,6 @@
 using Mediator;
 using Microsoft.EntityFrameworkCore;
+using Order.Application.Mapping;
 using Order.Infrastructure;
 
 namespace Order.Application.Queries;
@@ -23,11 +24,7 @@ public sealed class GetOrdersQueryHandler : IRequestHandler<GetOrdersQuery, IRea
         return await _dbContext.Orders
             .AsNoTracking()
             .Include(o => o.Items)
-            .Select(o => new OrderDto(
-                o.Id,
-                o.UserId,
-                o.Total,
-                o.Items.Select(i => new OrderItemDto(i.ProductId, i.Quantity, i.Price)).ToList()))
+            .ProjectToDto()
             .ToListAsync(cancellationToken);
     }
 }
@@ -47,11 +44,7 @@ public sealed class GetOrderByIdQueryHandler : IRequestHandler<GetOrderByIdQuery
             .AsNoTracking()
             .Include(o => o.Items)
             .Where(o => o.Id == request.Id)
-            .Select(o => new OrderDto(
-                o.Id,
-                o.UserId,
-                o.Total,
-                o.Items.Select(i => new OrderItemDto(i.ProductId, i.Quantity, i.Price)).ToList()))
+            .ProjectToDto()
             .FirstOrDefaultAsync(cancellationToken);
     }
 }

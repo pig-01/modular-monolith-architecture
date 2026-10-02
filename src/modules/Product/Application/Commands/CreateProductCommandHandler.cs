@@ -1,5 +1,6 @@
 using Mediator;
 using Product.Application.Abstractions;
+using Product.Application.Mapping;
 using Product.Domain.Entities;
 using Product.Domain.Events;
 using Product.Infrastructure;
@@ -28,7 +29,7 @@ public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand,
         await _mediator.Publish(new ProductCreatedIntegrationEvent(entity.Id, entity.Name, entity.Price), cancellationToken);
         entity.ClearDomainEvents();
 
-        return new ProductDto(entity.Id, entity.Name, entity.Price);
+        return ProductMapper.ToDto(entity);
     }
 
     private async Task PublishDomainEvents(Product.Domain.Entities.Product entity, CancellationToken cancellationToken)

@@ -61,4 +61,10 @@
   <Folder Name="/modules/User/Infrastructure/">
     <Project Path="modules/User/Infrastructure/User.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/modules/DataSource/tests/">
+    <Project Path="modules/DataSource/tests/DataSource.UnitTest/DataSource.UnitTest.csproj" />
+  </Folder>
+  <Folder Name="/modules/User/tests/">
+    <Project Path="modules/User/tests/User.UnitTest/User.UnitTest.csproj" />
+  </Folder>
 </Solution>

@@ -1,6 +1,7 @@
 using Mediator;
 using Microsoft.EntityFrameworkCore;
 using User.Application.Abstractions;
+using User.Application.Mapping;
 using User.Application.Commands;
 using User.Domain.Entities;
 using User.Domain.Events;
@@ -30,7 +31,7 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, UserD
         await _mediator.Publish(new UserCreatedIntegrationEvent(entity.Id, entity.Name, entity.Email), cancellationToken);
         entity.ClearDomainEvents();
 
-        return new UserDto(entity.Id, entity.Name, entity.Email);
+        return UserMapper.ToDto(entity);
     }
 
     private async Task PublishDomainEvents(User.Domain.Entities.User entity, CancellationToken cancellationToken)
