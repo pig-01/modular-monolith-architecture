@@ -134,9 +134,11 @@ Load user's registered DataSources from master DB
 | Provider | EF Core Package |
 |----------|----------------|
 | SQL Server | `Microsoft.EntityFrameworkCore.SqlServer` |
-| MySQL | `Pomelo.EntityFrameworkCore.MySql` |
+| MySQL 8.0+ | `MySql.EntityFrameworkCore` |
 | PostgreSQL | `Npgsql.EntityFrameworkCore.PostgreSQL` |
 | Oracle | `Oracle.EntityFrameworkCore` |
+
+MySQL 使用 Oracle 官方驅動；本專案不以 MariaDB 為支援目標。既有 Pomelo／MySqlConnector 專用的連線字串選項，需依 [Connector/NET 連線選項](https://dev.mysql.com/doc/connector-net/en/connector-net-8-0-connection-options.html) 調整。
 
 ### Data Source API
 
@@ -184,13 +186,41 @@ Provider values: `0` = MSSQL, `1` = MySQL, `2` = PostgreSQL, `3` = Oracle
 
 | Technology | Version |
 |------------|---------|
-| .NET | 10 |
-| ASP.NET Core Minimal API | 10 |
-| EF Core | 8.0.8 |
+| .NET SDK | 10.0.401（`global.json`，允許同 feature band 的修補版） |
+| ASP.NET Core Minimal API / JWT Bearer | 10.0.12 |
+| EF Core | 10.0.12 |
 | Mediator | 3.0.2 |
-| FluentValidation | 11.9.0 |
-| Serilog | 8.0.1 |
-| Swashbuckle (Swagger) | 6.5.0 |
+| Mapperly | 4.3.1 |
+| FluentValidation | 12.1.1 |
+| Serilog.AspNetCore / Settings.Configuration / Console | 10.0.0 / 10.0.1 / 6.1.1 |
+| Swashbuckle (Swagger) | 10.2.3 |
+| MySQL / PostgreSQL / Oracle EF providers | 10.0.9 / 10.0.3 / 10.23.26301 |
+| Microsoft.NET.Test.Sdk | 18.10.1 |
+| xUnit / Visual Studio runner | 2.9.3 / 4.0.0 |
+| coverlet.collector | 10.1.0 |
+| CSharpier（既有選用工具） | 1.3.0 |
+
+套件版本於 2026-10-02 查核 NuGet 最新穩定版，集中管理於 `src/Directory.Packages.props`。Mapperly、Mediator 與 xUnit 已是各自套件的最新穩定版。未使用的 BenchmarkDotNet 與 Microsoft.AspNetCore.OpenApi 版本宣告已移除。
+
+全專案格式整理使用 SDK 內建的 `dotnet format`，遵循既有 `.editorconfig`：
+
+```bash
+dotnet format src/ModularMonolith.slnx --no-restore
+dotnet format src/ModularMonolith.slnx --no-restore --verify-no-changes --exclude-diagnostics IDE1006
+```
+
+`dotnet format` 不支援 IDE1006 命名規則的批次修正，因此保留既有的私有欄位命名提示（方案內 35 處），驗證指令僅排除此項；未排除時會回傳 exit code 2。其餘格式與可自動修正的樣式均納入檢查。
+
+`User.IntegrationTest` 目前未列入方案；其中 `TenantUserDbContextFactoryTests` 仍使用舊的三參數建構函式，獨立建置會出現兩處 CS1729。這是升級前即存在的測試問題。若要整理此專案的格式，另執行：
+
+```bash
+dotnet format src/modules/User/tests/User.IntegrationTest/User.IntegrationTest.csproj --no-restore
+dotnet format src/modules/User/tests/User.IntegrationTest/User.IntegrationTest.csproj --no-restore --verify-no-changes --exclude-diagnostics IDE1006
+```
+
+升級相容性依據：[Swashbuckle v10 遷移指南](https://github.com/domaindrivendev/Swashbuckle.AspNetCore/blob/master/docs/migrating-to-v10.md)、[MySQL EF Core 套件](https://www.nuget.org/packages/MySql.EntityFrameworkCore/10.0.9)、[EF Core 10 變更說明](https://learn.microsoft.com/en-us/ef/core/what-is-new/ef-core-10.0/breaking-changes)。資料庫驅動與 migration 模型以不連線的測試驗證；實際資料庫連線仍需在對應環境驗收。
+
+本次升級驗證：方案建置成功、45/45 測試通過；Swagger JSON、JWT Bearer 文件設定、Swagger UI 與 DataSource 未登入回傳 401 均通過。NuGet 查核未發現落後的直接套件或已知弱點（含間接相依套件）。
 
 ---
 
@@ -198,7 +228,7 @@ Provider values: `0` = MSSQL, `1` = MySQL, `2` = PostgreSQL, `3` = Oracle
 
 ### Prerequisites
 
-- .NET 10 SDK
+- .NET 10.0.401 SDK 或同 feature band 的較新修補版
 - SQL Server instance (for master DB and/or tenant DBs)
 
 ### 1. Configure Connection Strings
@@ -303,3 +333,4 @@ src/modules/
 - The **JWT signing key** in `appsettings.json` is a placeholder. Store it in environment variables or a secrets manager.
 - The `InMemoryTenantConnectionStringResolver` reads tenant config from `appsettings.json`. Replace with a **database-backed resolver** for dynamic tenant provisioning.
 - **External data source credentials** used by the multi-source query should have **read-only** database permissions.
+- **User endpoints** currently lack `RequireAuthorization()`, despite the intended JWT requirement described above. An unauthenticated `/users` request reaches tenant resolution and returns HTTP 500. This pre-existing behavior is separate from the package upgrade; add authorization and HTTP regression coverage before production use.
