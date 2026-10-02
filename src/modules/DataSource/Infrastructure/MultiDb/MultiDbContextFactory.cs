@@ -1,7 +1,5 @@
 using DataSource.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
-using MySqlConnector;
-using Npgsql;
 
 namespace DataSource.Infrastructure.MultiDb;
 
@@ -35,9 +33,7 @@ public class MultiDbContextFactory : IMultiDbContextFactory
                 break;
 
             case ProviderType.MySQL:
-                // MySqlServerVersion can be passed explicitly if the server version is known.
-                builder.UseMySql(source.ConnectionString,
-                    new MySqlServerVersion(new Version(8, 0, 0)));
+                builder.UseMySQL(source.ConnectionString);
                 break;
 
             case ProviderType.PostgreSQL:
