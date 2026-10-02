@@ -37,12 +37,28 @@ Module/
 
 | Pattern | Implementation |
 |---------|---------------|
-| CQRS | MediatR — Commands and Queries separated |
-| Validation | FluentValidation via MediatR pipeline |
-| Transaction | `TransactionScope` via MediatR pipeline |
-| Intra-module events | MediatR `INotification` (domain events) |
-| Inter-module events | MediatR `INotification` (integration events) |
+| CQRS | Mediator — Commands and Queries separated |
+| Validation | FluentValidation via Mediator pipeline |
+| Transaction | `TransactionScope` via Mediator pipeline |
+| Intra-module events | Mediator `INotification` (domain events) |
+| Inter-module events | Mediator `INotification` (integration events) |
 | Authentication | JWT Bearer (`tenant_id` + `sub` claims) |
+
+---
+
+## Mediator 設定
+
+本專案採用 [martinothamar/Mediator](https://github.com/martinothamar/Mediator)，參考官方 [Clean Architecture sample](https://github.com/martinothamar/Mediator/tree/v3.0.2/samples/apps/ASPNET_Core_CleanArchitecture)。
+
+- 模組的 Application、Domain 與 IntegrationEvent 使用 `Mediator.Abstractions`；Web API 入口使用 `Mediator.SourceGenerator`，由 `AddApplicationMediator()` 統一註冊所有模組的處理器。
+- Mediator 與處理器使用 `Scoped`，配合 EF Core 與租戶服務的生命週期。新增查詢或命令處理器需為 `public`，讓入口專案產生的程式碼能存取。
+- 處理器回傳 `ValueTask<T>`，通知處理器回傳 `ValueTask`。各模組保留驗證與交易管線，透過 `next(request, cancellationToken)` 傳遞請求與取消權杖。
+- 各模組的獨立整合測試專案也使用 SourceGenerator；整體整合測試直接使用 Web API 的註冊與產生程式碼。
+
+```bash
+dotnet build src/ModularMonolith.slnx
+dotnet test src/ModularMonolith.slnx
+```
 
 ---
 
@@ -171,7 +187,7 @@ Provider values: `0` = MSSQL, `1` = MySQL, `2` = PostgreSQL, `3` = Oracle
 | .NET | 10 |
 | ASP.NET Core Minimal API | 10 |
 | EF Core | 8.0.8 |
-| MediatR | 11.1.0 |
+| Mediator | 3.0.2 |
 | FluentValidation | 11.9.0 |
 | Serilog | 8.0.1 |
 | Swashbuckle (Swagger) | 6.5.0 |

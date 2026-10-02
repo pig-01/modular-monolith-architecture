@@ -1,5 +1,5 @@
 using FluentValidation;
-using MediatR;
+using Mediator;
 
 namespace Order.Application.Pipeline;
 
@@ -13,7 +13,7 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
         _validators = validators;
     }
 
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
+    public async ValueTask<TResponse> Handle(TRequest request, MessageHandlerDelegate<TRequest, TResponse> next, CancellationToken cancellationToken)
     {
         if (_validators.Any())
         {
@@ -27,6 +27,6 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
             throw new ValidationException(failures);
         }
 
-        return await next();
+        return await next(request, cancellationToken);
     }
 }

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using System.Transactions;
 
 namespace User.Application.Pipeline;
@@ -6,14 +6,14 @@ namespace User.Application.Pipeline;
 public class TransactionBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
 {
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
+    public async ValueTask<TResponse> Handle(TRequest request, MessageHandlerDelegate<TRequest, TResponse> next, CancellationToken cancellationToken)
     {
         using var scope = new TransactionScope(TransactionScopeOption.Required, new TransactionOptions
         {
             IsolationLevel = IsolationLevel.ReadCommitted
         }, TransactionScopeAsyncFlowOption.Enabled);
 
-        var response = await next();
+        var response = await next(request, cancellationToken);
         scope.Complete();
         return response;
     }

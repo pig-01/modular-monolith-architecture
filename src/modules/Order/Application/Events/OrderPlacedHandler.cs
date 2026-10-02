@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.Extensions.Logging;
 using Order.Domain.Events;
 
@@ -13,9 +13,9 @@ public class OrderPlacedHandler : INotificationHandler<OrderPlaced>
         _logger = logger;
     }
 
-    public Task Handle(OrderPlaced notification, CancellationToken cancellationToken)
+    public ValueTask Handle(OrderPlaced notification, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Order placed: {OrderId} by {UserId}", notification.OrderId, notification.UserId);
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 }

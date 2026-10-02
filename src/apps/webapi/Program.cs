@@ -4,6 +4,7 @@ using DataSource.Application.Endpoints;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using ModularMonolith.WebApi;
 using Serilog;
 using User.Application;
 using User.Application.Endpoints;
@@ -63,6 +64,7 @@ builder.Services.AddUserModule(builder.Configuration);
 builder.Services.AddOrderModule(builder.Configuration);
 builder.Services.AddProductModule(builder.Configuration);
 builder.Services.AddDataSourceModule(builder.Configuration);
+builder.Services.AddApplicationMediator();
 
 var app = builder.Build();
 

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using User.Infrastructure;
 
@@ -8,7 +8,7 @@ public record UserDto(Guid Id, string Name, string Email);
 public record GetUsersQuery : IRequest<IReadOnlyList<UserDto>>;
 public record GetUserByIdQuery(Guid Id) : IRequest<UserDto?>;
 
-internal sealed class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, IReadOnlyList<UserDto>>
+public sealed class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, IReadOnlyList<UserDto>>
 {
     private readonly UserDbContext _dbContext;
 
@@ -17,7 +17,7 @@ internal sealed class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, IRea
         _dbContext = dbContext;
     }
 
-    public async Task<IReadOnlyList<UserDto>> Handle(GetUsersQuery request, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<UserDto>> Handle(GetUsersQuery request, CancellationToken cancellationToken)
     {
         return await _dbContext.Users
             .AsNoTracking()
@@ -26,7 +26,7 @@ internal sealed class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, IRea
     }
 }
 
-internal sealed class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery, UserDto?>
+public sealed class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery, UserDto?>
 {
     private readonly UserDbContext _dbContext;
 
@@ -35,7 +35,7 @@ internal sealed class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery
         _dbContext = dbContext;
     }
 
-    public async Task<UserDto?> Handle(GetUserByIdQuery request, CancellationToken cancellationToken)
+    public async ValueTask<UserDto?> Handle(GetUserByIdQuery request, CancellationToken cancellationToken)
     {
         return await _dbContext.Users
             .AsNoTracking()

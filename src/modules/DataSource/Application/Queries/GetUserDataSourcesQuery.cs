@@ -1,5 +1,5 @@
 using DataSource.Application.Abstractions;
-using MediatR;
+using Mediator;
 
 namespace DataSource.Application.Queries;
 

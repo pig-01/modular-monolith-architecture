@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using User.Application.Abstractions;
 using User.Application.Commands;
@@ -20,7 +20,7 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, UserD
         _mediator = mediator;
     }
 
-    public async Task<UserDto> Handle(CreateUserCommand request, CancellationToken cancellationToken)
+    public async ValueTask<UserDto> Handle(CreateUserCommand request, CancellationToken cancellationToken)
     {
         var entity = new User.Domain.Entities.User(Guid.NewGuid(), request.Name, request.Email);
         await _dbContext.Users.AddAsync(entity, cancellationToken);

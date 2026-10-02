@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Product.Domain.Events;
 
 namespace Product.Domain.Entities;

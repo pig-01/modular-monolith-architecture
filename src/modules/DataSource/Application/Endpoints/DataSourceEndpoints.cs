@@ -2,7 +2,7 @@ using DataSource.Application.Commands;
 using DataSource.Application.Queries;
 using DataSource.Application.Services;
 using DataSource.Domain.Enums;
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
