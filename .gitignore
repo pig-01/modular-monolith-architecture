@@ -55,3 +55,8 @@ nunit-*.xml
 
 # BenchmarkDotNet Artifacts
 BenchmarkDotNet.Artifacts/
+
+# Local container secrets and Aspire runtime state
+.env
+.env.*
+.aspire/

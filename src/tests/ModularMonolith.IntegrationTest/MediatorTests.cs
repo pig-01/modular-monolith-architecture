@@ -29,6 +29,22 @@ namespace ModularMonolith.IntegrationTest;
 public class MediatorTests
 {
     [Fact]
+    public void User_module_resolves_tenant_factory_and_rejects_missing_tenant()
+    {
+        var configuration = new ConfigurationBuilder().Build();
+        ServiceCollection services = new();
+        services.AddSingleton<IConfiguration>(configuration);
+        services.AddUserModule(configuration);
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            scope.ServiceProvider.GetRequiredService<UserDbContext>());
+
+        Assert.StartsWith("Tenant ID not found.", error.Message);
+    }
+
+    [Fact]
     public async Task Host_dispatches_commands_queries_and_domain_events_for_all_modules()
     {
         EventLog log = new();

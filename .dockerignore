@@ -1,0 +1,11 @@
+**/bin
+**/obj
+**/TestResults
+.git
+.agents
+.codex
+.env*
+artifacts
+src/ModularMonolith.AppHost
+src/tests
+src/modules/**/tests

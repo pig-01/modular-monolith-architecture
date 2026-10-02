@@ -1,3 +1,4 @@
+using DataSource.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Order.Infrastructure;
 using Product.Infrastructure;
@@ -5,11 +6,16 @@ using User.Infrastructure;
 using ProductEntity = Product.Domain.Entities.Product;
 using UserEntity = User.Domain.Entities.User;
 
-var connectionString = "Data Source=localhost;Initial Catalog=ModularMonolithDemo;Integrated Security=SSPI;TrustServerCertificate=true;app=LINQPad";
+var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+    ?? "Data Source=localhost;Initial Catalog=ModularMonolithDemo;Integrated Security=SSPI;TrustServerCertificate=true;app=LINQPad";
 
 await EnsureUserDataAsync(connectionString);
 await EnsureProductDataAsync(connectionString);
 await EnsureOrderDatabaseAsync(connectionString);
+
+await using var dataSources = new DataSourceDbContext(new DbContextOptionsBuilder<DataSourceDbContext>()
+    .UseSqlServer(connectionString).Options);
+await dataSources.Database.MigrateAsync();
 
 static async Task EnsureUserDataAsync(string connectionString)
 {

@@ -27,12 +27,6 @@ public static class DependencyInjection
             return factory.CreateDbContext();
         });
 
-        // Register UserDbContext by delegating to the factory so the connection string
-        // resolution logic lives in exactly one place (TenantUserDbContextFactory).
-        services.AddScoped<UserDbContext>(serviceProvider =>
-            serviceProvider.GetRequiredService<ITenantDbContextFactory<UserDbContext>>()
-                           .CreateDbContext());
-
         // --- CQRS pipeline ---
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
