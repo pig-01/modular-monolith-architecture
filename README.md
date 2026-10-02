@@ -9,6 +9,118 @@ A .NET 10 demo project showcasing **Modular Monolith Architecture** with two adv
 
 ---
 
+## 最小啟動：Aspire + Podman Compose
+
+已使用 `aspire init --language csharp --suppress-agent-init --non-interactive` 建立 AppHost。
+`src/ModularMonolith.AppHost/AppHost.cs` 統一定義 **SQL Server 就緒 → seed 成功結束 → Web API**，
+由 Aspire 產生 Compose，服務與相依關係只需在 AppHost 維護。
+
+### 全容器部署
+
+需要 `global.json` 指定的 .NET 10 SDK、Aspire CLI 13.6.0、Podman 5+ 與 Compose provider
+（`podman compose version` 應能成功）。SQL Server 使用 `2025-latest` Developer 映像，
+需要 x86-64 Linux 容器；Windows 使用 Podman machine。
+
+在儲存庫根目錄執行：
+
+```powershell
+# machine 尚未啟動時先執行 podman machine start
+$env:ASPIRE_CONTAINER_RUNTIME = 'podman'
+# 可重跑；已存在時沿用原資料卷
+podman volume create modular-monolith_sqlserver-data
+aspire deploy -e local -o artifacts/compose --non-interactive
+```
+
+Aspire 會使用根目錄 Dockerfile 的 `seed` 與 `webapi` targets 建置映像、產生 Compose，
+再透過 Podman 啟動。兩個應用程式容器都以非 root 使用者執行。
+
+- Swagger：<http://localhost:8080/swagger>
+- SQL Server：`localhost,14330`，帳號 `sa`。
+- `artifacts/compose/docker-compose.yaml`：產生的服務設定，不需手動修改。
+- `artifacts/compose/.env.local`：映像名稱、`SQLSERVER_PASSWORD` 與 `JWT_KEY`，包含機密且已由 Git 忽略。
+- SQL 密碼與 JWT 金鑰未指定時自動產生；部署參數會存入 Aspire 的 `local` 部署狀態，後續部署沿用。
+- 連接埠只綁定本機。SQL 使用 `modular-monolith_sqlserver-data` external volume，重建容器保留資料。
+
+此設定固定使用一個 `local` 環境。Aspire 13.6 依 AppHost 路徑產生 Compose project 名稱，
+容器名稱與 external 資料卷名稱則固定，避免路徑改變時無意切換資料卷。
+已有資料卷時，必須沿用原 SQL 密碼；更換 Aspire 部署狀態或參數不會更改資料庫內的 SA 密碼。
+從先前手寫 Compose 遷移時，需先將原 `.env` 的 `MSSQL_SA_PASSWORD`、`JWT_KEY` 分別作為
+AppHost 的 `Parameters__sqlserver-password`、`Parameters__jwt-key` 程序環境變數傳入首次部署。
+根目錄 `.env` 不會由 Aspire 自動載入；本機既有值已在遷移驗證時帶入。
+
+僅產生 YAML 與空白參數檔供檢視（不建置映像、不啟動容器）：
+
+```powershell
+aspire publish -o artifacts/compose --non-interactive
+```
+
+部署後可直接使用產出的 Compose。先讀取 Aspire 實際使用的 project 名稱，避免操作到另一組容器：
+
+```powershell
+$project = podman inspect modular-monolith_sqlserver_1 --format '{{index .Config.Labels "com.docker.compose.project"}}'
+$composeArgs = @('-p', $project, '-f', 'artifacts/compose/docker-compose.yaml', '--env-file', 'artifacts/compose/.env.local')
+podman compose @composeArgs ps -a
+podman compose @composeArgs logs seed
+# 停止並移除容器，保留 external SQL 資料卷
+podman compose @composeArgs down
+# 在同一個 shell 中可使用原 project 名稱重新啟動
+podman compose @composeArgs up -d
+```
+
+`seed` 正常完成應為 `Exited (0)`；初始化失敗時 API 不會啟動。
+SQL external volume 由 Podman 獨立管理，停止與重新部署不會刪除它。
+
+### 本機開發：.NET 程式 + Podman SQL Server
+
+同一份 AppHost 也支援本機執行 .NET 程式：
+
+```powershell
+$env:ASPIRE_CONTAINER_RUNTIME = 'podman'
+aspire start --isolated --non-interactive
+aspire wait webapi --non-interactive
+aspire describe --non-interactive
+aspire stop --non-interactive
+```
+
+從 Aspire Dashboard 的 `webapi` HTTP 端點開啟 `/swagger`。
+`--isolated` 使用隔離環境、連接埠與 user-secrets，方便與其他 AppHost 共存；
+開發模式與 Compose 部署使用各自的資料卷與密碼。兩種模式均由 AppHost 注入 SQL 連線字串與 JWT 金鑰。
+開發 Dashboard 提供資源狀態與 console logs；未加入 ServiceDefaults / OpenTelemetry，Compose 部署不另啟 Dashboard。
+
+### 資料庫與驗證
+
+只有一個 SQL Server 容器。`ModularMonolithDemo` 為共用資料庫，seed 套用四個模組的 migrations，
+並在空表加入 10 筆 User、30 筆 Product；重跑 seed 不會重複新增。
+`Tenant1DB`、`Tenant2DB` 保留租戶隔離，由 User 模組首次收到對應 JWT 時套用 migration。
+Aspire 開發模式會先建立兩個租戶資料庫；Compose 則由 User 模組首次使用時建立。
+租戶 Users 表初始為空，共用資料庫的示範 Users 不會複製到租戶資料庫。
+
+```powershell
+# 檢查容器狀態、Swagger、Product、Order，以及兩個租戶的 User / DataSource API
+./scripts/Test-Deployment.ps1
+# 驗證 seed 可重跑
+podman compose @composeArgs run --rm seed
+./scripts/Test-Deployment.ps1
+
+dotnet test src/ModularMonolith.slnx
+```
+
+`/users/` 需要含 `tenant_id=tenant1` 或 `tenant2` 的有效 JWT；`/datasources/` 另外需要 GUID 格式的 `sub`。
+部署檢查會從本機 API 容器讀取簽章金鑰產生測試 JWT，不輸出金鑰或 token；請在已部署的主機執行。
+
+此 Windows / Podman 環境的一般 Aspire 開發啟動曾停在 `Starting`；隔離模式已完成端到端驗證。
+方案 46 個測試通過。
+
+2026-10-02：`aspire publish` 與 `aspire deploy -e local` 成功；部署流程 25/25 步驟通過，
+沿用既有 SQL 資料卷，部署檢查與 seed 重跑均成功，產品仍為 30 筆。
+
+參考：[Aspire Compose 部署](https://aspire.dev/deployment/docker-compose/)、
+[SQL Server hosting 整合](https://aspire.dev/integrations/databases/sql-server/sql-server-host/)、
+[Aspire 隔離啟動](https://aspire.dev/reference/cli/commands/aspire-start/)、
+[SQL Server Linux 容器](https://learn.microsoft.com/en-us/sql/linux/quickstart-install-connect-docker?view=sql-server-ver17)。
+
+---
+
 ## Architecture Overview
 
 ```
@@ -254,17 +366,9 @@ Edit `src/apps/webapi/appsettings.json`:
 ```bash
 cd src
 
-# User module (tenant schema — also auto-applied at runtime)
-dotnet ef migrations add Initial_User -p modules/User/Infrastructure -s apps/webapi
-
-# Order & Product modules
-dotnet ef migrations add Initial_Order   -p modules/Order/Infrastructure   -s apps/webapi
-dotnet ef migrations add Initial_Product -p modules/Product/Infrastructure  -s apps/webapi
-
-# DataSource module (master registry)
-dotnet ef migrations add Initial_DataSource -p modules/DataSource/Infrastructure -s apps/webapi
-
-# Apply all migrations
+# Initial migrations are already checked in; apply them to the configured database.
+# Compose and Aspire run the seed utility automatically, so these commands are only
+# needed when running against your own SQL Server without either orchestrator.
 dotnet ef database update -p modules/User/Infrastructure        -s apps/webapi
 dotnet ef database update -p modules/Order/Infrastructure       -s apps/webapi
 dotnet ef database update -p modules/Product/Infrastructure     -s apps/webapi

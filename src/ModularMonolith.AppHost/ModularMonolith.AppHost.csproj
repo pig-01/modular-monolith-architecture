@@ -1,0 +1,19 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.6.0">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AspireUseCliBundle>true</AspireUseCliBundle>
+    <UserSecretsId>af8ed48d-2a96-4900-ab66-62e7dac566fd</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.Docker" />
+    <PackageReference Include="Aspire.Hosting.SqlServer" />
+    <ProjectReference Include="..\apps\seed\ModularMonolith.Seed.csproj" />
+    <ProjectReference Include="..\apps\webapi\ModularMonolith.WebApi.csproj" />
+  </ItemGroup>
+
+</Project>

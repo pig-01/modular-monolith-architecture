@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\modules\DataSource\Infrastructure\DataSource.Infrastructure.csproj" />
     <ProjectReference Include="..\\..\\modules\\User\\Infrastructure\\User.Infrastructure.csproj" />
     <ProjectReference Include="..\\..\\modules\\Product\\Infrastructure\\Product.Infrastructure.csproj" />
     <ProjectReference Include="..\\..\\modules\\Order\\Infrastructure\\Order.Infrastructure.csproj" />
