@@ -1,4 +1,5 @@
 using DataSource.Application.Abstractions;
+using DataSource.Application.Mapping;
 using DataSource.Infrastructure;
 using DataSource.Infrastructure.MultiDb;
 using Microsoft.EntityFrameworkCore;
@@ -54,7 +55,7 @@ public class MultiSourceQueryService : IMultiSourceQueryService
 
         return users.Select(u =>
             new SourcedResult<UserData>(
-                new UserData(u.Id, u.Name, u.Email),
+                DataSourceMapper.ToUserData(u),
                 source.Name,
                 source.Provider));
     }

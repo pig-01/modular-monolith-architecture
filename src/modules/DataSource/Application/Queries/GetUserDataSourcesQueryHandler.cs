@@ -1,4 +1,5 @@
 using DataSource.Application.Abstractions;
+using DataSource.Application.Mapping;
 using DataSource.Infrastructure;
 using Mediator;
 using Microsoft.EntityFrameworkCore;
@@ -21,7 +22,7 @@ public class GetUserDataSourcesQueryHandler : IRequestHandler<GetUserDataSources
         return await _dbContext.DataSources
             .Where(ds => ds.UserId == request.UserId)
             .AsNoTracking()
-            .Select(ds => new DataSourceDto(ds.Id, ds.UserId, ds.Name, ds.Provider))
+            .ProjectToDto()
             .ToListAsync(cancellationToken);
     }
 }

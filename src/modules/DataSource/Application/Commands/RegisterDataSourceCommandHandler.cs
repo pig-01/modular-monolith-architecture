@@ -1,4 +1,5 @@
 using DataSource.Application.Abstractions;
+using DataSource.Application.Mapping;
 using DataSource.Infrastructure;
 using Mediator;
 
@@ -25,6 +26,6 @@ public class RegisterDataSourceCommandHandler : IRequestHandler<RegisterDataSour
         _dbContext.DataSources.Add(entity);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return new DataSourceDto(entity.Id, entity.UserId, entity.Name, entity.Provider);
+        return DataSourceMapper.ToDto(entity);
     }
 }

@@ -1,5 +1,6 @@
 using Mediator;
 using Order.Application.Abstractions;
+using Order.Application.Mapping;
 using Order.Domain.Entities;
 using Order.Domain.Events;
 using Order.Infrastructure;
@@ -31,8 +32,7 @@ public class PlaceOrderCommandHandler : IRequestHandler<PlaceOrderCommand, Order
             order.Items.Select(i => new OrderPlacedProduct(i.ProductId, i.Quantity)).ToList()), cancellationToken);
         order.ClearDomainEvents();
 
-        var dtoItems = order.Items.Select(i => new OrderItemDto(i.ProductId, i.Quantity, i.Price)).ToList();
-        return new OrderDto(order.Id, order.UserId, dtoItems, order.Total);
+        return OrderMapper.ToDto(order);
     }
 
     private async Task PublishDomainEvents(Order.Domain.Entities.Order order, CancellationToken cancellationToken)

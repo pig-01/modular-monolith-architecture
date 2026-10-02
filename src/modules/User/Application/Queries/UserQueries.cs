@@ -1,5 +1,6 @@
 using Mediator;
 using Microsoft.EntityFrameworkCore;
+using User.Application.Mapping;
 using User.Infrastructure;
 
 namespace User.Application.Queries;
@@ -21,7 +22,7 @@ public sealed class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, IReadO
     {
         return await _dbContext.Users
             .AsNoTracking()
-            .Select(u => new UserDto(u.Id, u.Name, u.Email))
+            .ProjectToDto()
             .ToListAsync(cancellationToken);
     }
 }
@@ -40,7 +41,7 @@ public sealed class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery, 
         return await _dbContext.Users
             .AsNoTracking()
             .Where(u => u.Id == request.Id)
-            .Select(u => new UserDto(u.Id, u.Name, u.Email))
+            .ProjectToDto()
             .FirstOrDefaultAsync(cancellationToken);
     }
 }
