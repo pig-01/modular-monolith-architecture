@@ -3,7 +3,7 @@ using DataSource.Application.Services;
 using DataSource.Infrastructure;
 using DataSource.Infrastructure.MultiDb;
 using FluentValidation;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,7 +20,6 @@ public static class DependencyInjection
         services.AddScoped<IMultiDbContextFactory, MultiDbContextFactory>();
         services.AddScoped<IMultiSourceQueryService, MultiSourceQueryService>();
 
-        services.AddMediatR(typeof(DependencyInjection).Assembly);
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,>));

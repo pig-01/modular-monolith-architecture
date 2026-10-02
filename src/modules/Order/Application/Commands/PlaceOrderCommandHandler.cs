@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Order.Application.Abstractions;
 using Order.Domain.Entities;
 using Order.Domain.Events;
@@ -18,7 +18,7 @@ public class PlaceOrderCommandHandler : IRequestHandler<PlaceOrderCommand, Order
         _mediator = mediator;
     }
 
-    public async Task<OrderDto> Handle(PlaceOrderCommand request, CancellationToken cancellationToken)
+    public async ValueTask<OrderDto> Handle(PlaceOrderCommand request, CancellationToken cancellationToken)
     {
         var items = request.Items.Select(i => new OrderItem(i.ProductId, i.Quantity, i.Price)).ToList();
         var order = new Order.Domain.Entities.Order(Guid.NewGuid(), request.UserId, items);

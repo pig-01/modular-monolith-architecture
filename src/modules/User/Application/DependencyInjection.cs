@@ -1,5 +1,5 @@
-﻿using FluentValidation;
-using MediatR;
+using FluentValidation;
+using Mediator;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using User.Application.MultiTenant;
@@ -34,7 +34,6 @@ public static class DependencyInjection
                            .CreateDbContext());
 
         // --- CQRS pipeline ---
-        services.AddMediatR(typeof(DependencyInjection).Assembly);
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,>));

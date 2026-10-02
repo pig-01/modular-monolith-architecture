@@ -1,6 +1,6 @@
 using DataSource.Application.Abstractions;
 using DataSource.Domain.Enums;
-using MediatR;
+using Mediator;
 
 namespace DataSource.Application.Commands;
 

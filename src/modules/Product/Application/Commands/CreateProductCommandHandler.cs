@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Product.Application.Abstractions;
 using Product.Domain.Entities;
 using Product.Domain.Events;
@@ -18,7 +18,7 @@ public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand,
         _mediator = mediator;
     }
 
-    public async Task<ProductDto> Handle(CreateProductCommand request, CancellationToken cancellationToken)
+    public async ValueTask<ProductDto> Handle(CreateProductCommand request, CancellationToken cancellationToken)
     {
         var entity = new Product.Domain.Entities.Product(Guid.NewGuid(), request.Name, request.Price);
         await _dbContext.Products.AddAsync(entity, cancellationToken);

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.Extensions.Logging;
 using Product.Domain.Events;
 
@@ -13,9 +13,9 @@ public class ProductCreatedHandler : INotificationHandler<ProductCreated>
         _logger = logger;
     }
 
-    public Task Handle(ProductCreated notification, CancellationToken cancellationToken)
+    public ValueTask Handle(ProductCreated notification, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Product created: {ProductId} {Name}", notification.ProductId, notification.Name);
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 }

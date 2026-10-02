@@ -1,5 +1,5 @@
 using FluentValidation;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Product.Application.Commands;
@@ -17,13 +17,14 @@ public class CreateProductCommandHandlerTests
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddDbContext<ProductDbContext>(options => options.UseInMemoryDatabase("product-int-tests"));
-        services.AddMediatR(typeof(CreateProductCommand).Assembly);
+        services.AddMediator((MediatorOptions options) => options.ServiceLifetime = ServiceLifetime.Scoped);
         services.AddValidatorsFromAssembly(typeof(CreateProductCommand).Assembly);
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,>));
 
-        var provider = services.BuildServiceProvider();
-        var mediator = provider.GetRequiredService<IMediator>();
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true, ValidateOnBuild = true });
+        using var scope = provider.CreateScope();
+        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         var result = await mediator.Send(new CreateProductCommand("Gadget", 10m));
 

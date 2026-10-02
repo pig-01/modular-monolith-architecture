@@ -1,5 +1,5 @@
 using DataSource.Infrastructure;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 
 namespace DataSource.Application.Commands;
@@ -13,7 +13,7 @@ public class DeleteDataSourceCommandHandler : IRequestHandler<DeleteDataSourceCo
         _dbContext = dbContext;
     }
 
-    public async Task<bool> Handle(DeleteDataSourceCommand request, CancellationToken cancellationToken)
+    public async ValueTask<bool> Handle(DeleteDataSourceCommand request, CancellationToken cancellationToken)
     {
         var entity = await _dbContext.DataSources
             .FirstOrDefaultAsync(

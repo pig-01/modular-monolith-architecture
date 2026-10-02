@@ -1,6 +1,6 @@
 using DataSource.Application.Abstractions;
 using DataSource.Infrastructure;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 
 namespace DataSource.Application.Queries;
@@ -14,7 +14,7 @@ public class GetUserDataSourcesQueryHandler : IRequestHandler<GetUserDataSources
         _dbContext = dbContext;
     }
 
-    public async Task<IReadOnlyList<DataSourceDto>> Handle(
+    public async ValueTask<IReadOnlyList<DataSourceDto>> Handle(
         GetUserDataSourcesQuery request,
         CancellationToken cancellationToken)
     {

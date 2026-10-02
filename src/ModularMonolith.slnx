@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/tests/">
+    <Project Path="tests/ModularMonolith.IntegrationTest/ModularMonolith.IntegrationTest.csproj" />
+  </Folder>
   <Folder Name="/apps/" />
   <Folder Name="/apps/seed/">
     <Project Path="apps/seed/ModularMonolith.Seed.csproj" />

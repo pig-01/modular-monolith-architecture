@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Order.Application.Abstractions;
 
 namespace Order.Application.Commands;

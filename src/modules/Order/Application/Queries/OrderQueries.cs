@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Order.Infrastructure;
 
@@ -9,7 +9,7 @@ public record OrderDto(Guid Id, Guid UserId, decimal Total, IReadOnlyList<OrderI
 public record GetOrdersQuery : IRequest<IReadOnlyList<OrderDto>>;
 public record GetOrderByIdQuery(Guid Id) : IRequest<OrderDto?>;
 
-internal sealed class GetOrdersQueryHandler : IRequestHandler<GetOrdersQuery, IReadOnlyList<OrderDto>>
+public sealed class GetOrdersQueryHandler : IRequestHandler<GetOrdersQuery, IReadOnlyList<OrderDto>>
 {
     private readonly OrderDbContext _dbContext;
 
@@ -18,7 +18,7 @@ internal sealed class GetOrdersQueryHandler : IRequestHandler<GetOrdersQuery, IR
         _dbContext = dbContext;
     }
 
-    public async Task<IReadOnlyList<OrderDto>> Handle(GetOrdersQuery request, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<OrderDto>> Handle(GetOrdersQuery request, CancellationToken cancellationToken)
     {
         return await _dbContext.Orders
             .AsNoTracking()
@@ -32,7 +32,7 @@ internal sealed class GetOrdersQueryHandler : IRequestHandler<GetOrdersQuery, IR
     }
 }
 
-internal sealed class GetOrderByIdQueryHandler : IRequestHandler<GetOrderByIdQuery, OrderDto?>
+public sealed class GetOrderByIdQueryHandler : IRequestHandler<GetOrderByIdQuery, OrderDto?>
 {
     private readonly OrderDbContext _dbContext;
 
@@ -41,7 +41,7 @@ internal sealed class GetOrderByIdQueryHandler : IRequestHandler<GetOrderByIdQue
         _dbContext = dbContext;
     }
 
-    public async Task<OrderDto?> Handle(GetOrderByIdQuery request, CancellationToken cancellationToken)
+    public async ValueTask<OrderDto?> Handle(GetOrderByIdQuery request, CancellationToken cancellationToken)
     {
         return await _dbContext.Orders
             .AsNoTracking()

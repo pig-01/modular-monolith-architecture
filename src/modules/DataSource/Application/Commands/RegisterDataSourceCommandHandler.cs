@@ -1,6 +1,6 @@
 using DataSource.Application.Abstractions;
 using DataSource.Infrastructure;
-using MediatR;
+using Mediator;
 
 namespace DataSource.Application.Commands;
 
@@ -13,7 +13,7 @@ public class RegisterDataSourceCommandHandler : IRequestHandler<RegisterDataSour
         _dbContext = dbContext;
     }
 
-    public async Task<DataSourceDto> Handle(RegisterDataSourceCommand request, CancellationToken cancellationToken)
+    public async ValueTask<DataSourceDto> Handle(RegisterDataSourceCommand request, CancellationToken cancellationToken)
     {
         var entity = new Domain.Entities.DataSource(
             Guid.NewGuid(),

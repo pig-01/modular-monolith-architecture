@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.Extensions.Logging;
 using User.Domain.Events;
 
@@ -13,9 +13,9 @@ public class UserRegisteredHandler : INotificationHandler<UserRegistered>
         _logger = logger;
     }
 
-    public Task Handle(UserRegistered notification, CancellationToken cancellationToken)
+    public ValueTask Handle(UserRegistered notification, CancellationToken cancellationToken)
     {
         _logger.LogInformation("User registered: {UserId} {Email}", notification.UserId, notification.Email);
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 }
