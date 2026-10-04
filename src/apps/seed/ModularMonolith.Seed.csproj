@@ -8,10 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\modules\Auth\Application\Auth.Application.csproj" />
     <ProjectReference Include="..\..\modules\DataSource\Infrastructure\DataSource.Infrastructure.csproj" />
     <ProjectReference Include="..\\..\\modules\\User\\Infrastructure\\User.Infrastructure.csproj" />
     <ProjectReference Include="..\\..\\modules\\Product\\Infrastructure\\Product.Infrastructure.csproj" />

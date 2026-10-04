@@ -1,6 +1,13 @@
 **/bin
 **/obj
 **/TestResults
+**/node_modules
+**/dist
+**/playwright-report
+**/test-results
+**/*.pfx
+**/*.pem
+**/*.key
 .git
 .agents
 .codex

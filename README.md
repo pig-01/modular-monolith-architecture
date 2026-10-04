@@ -4,120 +4,46 @@
 
 A .NET 10 demo project showcasing **Modular Monolith Architecture** with two advanced data access patterns:
 
-1. **Database-per-Tenant** — each authenticated user's data is stored in their own isolated database, selected automatically via JWT claims.
+1. **Database-per-Tenant** — tenant data lives in separate databases, selected from the authenticated session and validated membership.
 2. **Multi-Source Aggregation** — a single user can register multiple heterogeneous databases (MSSQL, MySQL, PostgreSQL, Oracle) and query across all of them in parallel, with each result tagged by its origin.
 
 ---
 
-## 最小啟動：Aspire + Podman Compose
+## 啟動：Docker Compose + HTTPS 登入網站
 
-已使用 `aspire init --language csharp --suppress-agent-init --non-interactive` 建立 AppHost。
-`src/ModularMonolith.AppHost/AppHost.cs` 統一定義 **SQL Server 就緒 → seed 成功結束 → Web API**，
-由 Aspire 產生 Compose，服務與相依關係只需在 AppHost 維護。
+根目錄 `compose.yaml` 直接啟動 **SQL Server → Auth／共用／全部 tenant migrations 與 seed → 單一 API → HTTPS Nginx 前端**，並包含本機 Mailpit 信箱。不需要 Aspire CLI；既有 AppHost 仍可用於 .NET 本機開發與另一種 Compose 發佈流程。
 
-### 全容器部署
-
-需要 `global.json` 指定的 .NET 10 SDK、Aspire CLI 13.6.0、Podman 5+ 與 Compose provider
-（`podman compose version` 應能成功）。SQL Server 使用 `2025-latest` Developer 映像，
-需要 x86-64 Linux 容器；Windows 使用 Podman machine。
-
-在儲存庫根目錄執行：
+需要啟動中的 Docker Desktop／Engine、Docker Compose、PowerShell 7，以及 .NET 10 SDK（建立本機憑證）。SQL Server 使用 x86-64 Linux 容器。
 
 ```powershell
-# machine 尚未啟動時先執行 podman machine start
-$env:ASPIRE_CONTAINER_RUNTIME = 'podman'
-# 可重跑；已存在時沿用原資料卷
-podman volume create modular-monolith_sqlserver-data
-aspire deploy -e local -o artifacts/compose --non-interactive
+./scripts/Initialize-LocalDeployment.ps1
+docker compose --env-file artifacts/compose/.env.local up --build -d
 ```
 
-Aspire 會使用根目錄 Dockerfile 的 `seed` 與 `webapi` targets 建置映像、產生 Compose，
-再透過 Podman 啟動。兩個應用程式容器都以非 root 使用者執行。
-
-- Swagger：<http://localhost:8080/swagger>
-- SQL Server：`localhost,14330`，帳號 `sa`。
-- `artifacts/compose/docker-compose.yaml`：產生的服務設定，不需手動修改。
-- `artifacts/compose/.env.local`：映像名稱、`SQLSERVER_PASSWORD` 與 `JWT_KEY`，包含機密且已由 Git 忽略。
-- SQL 密碼與 JWT 金鑰未指定時自動產生；部署參數會存入 Aspire 的 `local` 部署狀態，後續部署沿用。
-- 連接埠只綁定本機。SQL 使用 `modular-monolith_sqlserver-data` external volume，重建容器保留資料。
-
-此設定固定使用一個 `local` 環境。Aspire 13.6 依 AppHost 路徑產生 Compose project 名稱，
-容器名稱與 external 資料卷名稱則固定，避免路徑改變時無意切換資料卷。
-已有資料卷時，必須沿用原 SQL 密碼；更換 Aspire 部署狀態或參數不會更改資料庫內的 SA 密碼。
-從先前手寫 Compose 遷移時，需先將原 `.env` 的 `MSSQL_SA_PASSWORD`、`JWT_KEY` 分別作為
-AppHost 的 `Parameters__sqlserver-password`、`Parameters__jwt-key` 程序環境變數傳入首次部署。
-根目錄 `.env` 不會由 Aspire 自動載入；本機既有值已在遷移驗證時帶入。
-
-僅產生 YAML 與空白參數檔供檢視（不建置映像、不啟動容器）：
+- 網站：<https://localhost:8443>；支援註冊、email 確認、登入、忘記／重設密碼及受保護的帳號頁。
+- Mailpit：<http://localhost:8025>；註冊後從此收取確認信。
+- 一般帳號預設加入 `tenant1`；其他 membership 由 seed 指令授予，切換租戶同步同瀏覽器各分頁。
+- 管理員：`admin@example.test`；初始密碼於本機隨機產生，保存在忽略的 `artifacts/compose/.env.local`。重跑 seed 不重設既有密碼。
+- API 只透過同源 `/api` proxy 存取；SQL 管理埠只綁定 `localhost,14330`。
+- SQL 與 DP key ring 使用固定 external volumes；憑證與設定只於執行時掛載，沒有打包進 image。
 
 ```powershell
-aspire publish -o artifacts/compose --non-interactive
+$credential = ./scripts/Get-LocalAdministratorCredential.ps1
+./scripts/Test-Deployment.ps1 -Credential $credential
+docker compose --env-file artifacts/compose/.env.local logs seed
+# 重跑 migrations/seed，保留既有資料與密碼：
+docker compose --env-file artifacts/compose/.env.local run --rm seed
+# 對已註冊帳號授予 allowlist 內的 tenant：
+docker compose --env-file artifacts/compose/.env.local run --rm seed grant-membership person@example.test tenant2
 ```
 
-部署後可直接使用產出的 Compose。先讀取 Aspire 實際使用的 project 名稱，避免操作到另一組容器：
+部署檢查使用 CSRF + 真實登入與 cookies，不自行簽發 JWT。初始化會沿用已有 `.env.local`；如已有 SQL volume 卻缺少參數檔，必須提供原 `SQLSERVER_PASSWORD`，不會產生不同密碼覆蓋它。Docker 與 Podman 的資料卷分屬不同引擎；切換引擎不會自動搬移資料。
 
-```powershell
-$project = podman inspect modular-monolith_sqlserver_1 --format '{{index .Config.Labels "com.docker.compose.project"}}'
-$composeArgs = @('-p', $project, '-f', 'artifacts/compose/docker-compose.yaml', '--env-file', 'artifacts/compose/.env.local')
-podman compose @composeArgs ps -a
-podman compose @composeArgs logs seed
-# 停止並移除容器，保留 external SQL 資料卷
-podman compose @composeArgs down
-# 在同一個 shell 中可使用原 project 名稱重新啟動
-podman compose @composeArgs up -d
-```
+停止時使用 `docker compose --env-file artifacts/compose/.env.local down`，external volumes 仍保留。正式環境 SMTP、TLS、金鑰輪換、備份及 `deploy/compose.production.yaml` 用法見 [Auth deployment runbook](docs/runbooks/auth-deployment.md)。
 
-`seed` 正常完成應為 `Exited (0)`；初始化失敗時 API 不會啟動。
-SQL external volume 由 Podman 獨立管理，停止與重新部署不會刪除它。
+### 本機前後端開發
 
-### 本機開發：.NET 程式 + Podman SQL Server
-
-同一份 AppHost 也支援本機執行 .NET 程式：
-
-```powershell
-$env:ASPIRE_CONTAINER_RUNTIME = 'podman'
-aspire start --isolated --non-interactive
-aspire wait webapi --non-interactive
-aspire describe --non-interactive
-aspire stop --non-interactive
-```
-
-從 Aspire Dashboard 的 `webapi` HTTP 端點開啟 `/swagger`。
-`--isolated` 使用隔離環境、連接埠與 user-secrets，方便與其他 AppHost 共存；
-開發模式與 Compose 部署使用各自的資料卷與密碼。兩種模式均由 AppHost 注入 SQL 連線字串與 JWT 金鑰。
-開發 Dashboard 提供資源狀態與 console logs；未加入 ServiceDefaults / OpenTelemetry，Compose 部署不另啟 Dashboard。
-
-### 資料庫與驗證
-
-只有一個 SQL Server 容器。`ModularMonolithDemo` 為共用資料庫，seed 套用四個模組的 migrations，
-並在空表加入 10 筆 User、30 筆 Product；重跑 seed 不會重複新增。
-`Tenant1DB`、`Tenant2DB` 保留租戶隔離，由 User 模組首次收到對應 JWT 時套用 migration。
-Aspire 開發模式會先建立兩個租戶資料庫；Compose 則由 User 模組首次使用時建立。
-租戶 Users 表初始為空，共用資料庫的示範 Users 不會複製到租戶資料庫。
-
-```powershell
-# 檢查容器狀態、Swagger、Product、Order，以及兩個租戶的 User / DataSource API
-./scripts/Test-Deployment.ps1
-# 驗證 seed 可重跑
-podman compose @composeArgs run --rm seed
-./scripts/Test-Deployment.ps1
-
-dotnet test src/ModularMonolith.slnx
-```
-
-`/users/` 需要含 `tenant_id=tenant1` 或 `tenant2` 的有效 JWT；`/datasources/` 另外需要 GUID 格式的 `sub`。
-部署檢查會從本機 API 容器讀取簽章金鑰產生測試 JWT，不輸出金鑰或 token；請在已部署的主機執行。
-
-此 Windows / Podman 環境的一般 Aspire 開發啟動曾停在 `Starting`；隔離模式已完成端到端驗證。
-方案 46 個測試通過。
-
-2026-10-02：`aspire publish` 與 `aspire deploy -e local` 成功；部署流程 25/25 步驟通過，
-沿用既有 SQL 資料卷，部署檢查與 seed 重跑均成功，產品仍為 30 筆。
-
-參考：[Aspire Compose 部署](https://aspire.dev/deployment/docker-compose/)、
-[SQL Server hosting 整合](https://aspire.dev/integrations/databases/sql-server/sql-server-host/)、
-[Aspire 隔離啟動](https://aspire.dev/reference/cli/commands/aspire-start/)、
-[SQL Server Linux 容器](https://learn.microsoft.com/en-us/sql/linux/quickstart-install-connect-docker?view=sql-server-ver17)。
+保留後面的 Vite 指令即可開發 React；依 [frontend README](src/apps/web/README.md) 使用同一組 HTTPS 憑證與 API proxy。既有 Aspire 13.6 AppHost 可用 `aspire start --isolated --non-interactive` 啟動 .NET 開發服務；Vite HMR 時將 `Deployment__FrontendUrl` 設為 Vite 的 HTTPS origin。完整容器部署請優先使用上面的 Docker Compose 指令。
 
 ---
 
@@ -127,8 +53,10 @@ dotnet test src/ModularMonolith.slnx
 src/
 ├── apps/
 │   ├── webapi/          # ASP.NET Core Minimal API host
+│   ├── web/             # React + TypeScript frontend (Vite)
 │   └── seed/            # Database seeding utility
 └── modules/
+    ├── Auth/            # Central Identity, memberships, sessions and login endpoints
     ├── User/            # User module (tenant-aware CRUD)
     ├── Order/           # Order module
     ├── Product/         # Product module
@@ -154,7 +82,7 @@ Module/
 | Transaction | `TransactionScope` via Mediator pipeline |
 | Intra-module events | Mediator `INotification` (domain events) |
 | Inter-module events | Mediator `INotification` (integration events) |
-| Authentication | JWT Bearer (`tenant_id` + `sub` claims) |
+| Authentication | JWT in HttpOnly cookies; Bearer validation; database-backed sessions |
 
 ---
 
@@ -176,7 +104,7 @@ dotnet test src/ModularMonolith.slnx
 
 ## Feature 1 — Database-per-Tenant
 
-Every request to a User endpoint is routed to the **calling user's own database**, identified by the `tenant_id` claim in the JWT token.
+Every request to a User endpoint is routed to the **active tenant's database**, after validating the JWT, server-side session, and current membership.
 
 ```
 POST /users  (JWT: tenant_id=tenant1)
@@ -188,13 +116,13 @@ JwtTenantProvider          reads "tenant_id" claim
 InMemoryTenantConnectionStringResolver   appsettings.json → Tenants:tenant1
      │
      ▼
-TenantUserDbContextFactory               builds UserDbContext + MigrateAsync (once per tenant)
+TenantUserDbContextFactory               builds UserDbContext for the validated session tenant
      │
      ▼
 UserDbContext → Tenant1 DB (SQL Server)
 ```
 
-**Schema guarantee:** On the first request for each tenant, EF Core `MigrateAsync()` is called automatically, ensuring every tenant database has an identical, up-to-date schema.
+**Schema guarantee:** Seed applies migrations to every configured tenant before API startup. HTTP requests never migrate databases. Only a tenant present in the authenticated session and current membership is accepted.
 
 ### Configuration
 
@@ -216,7 +144,8 @@ UserDbContext → Tenant1 DB (SQL Server)
 | Claim | Description |
 |-------|-------------|
 | `tenant_id` | Routes User module requests to the correct database |
-| `sub` / `user_id` | Identifies the authenticated user (used by DataSource module) |
+| `sub` | Central Identity account ID (GUID); used by DataSource ownership filters |
+| `sid` | Server-side session checked on every authenticated request |
 
 ---
 
@@ -276,21 +205,23 @@ Provider values: `0` = MSSQL, `1` = MySQL, `2` = PostgreSQL, `3` = Oracle
 
 ## All API Endpoints
 
+Browser URLs prepend `/api`; Nginx removes that prefix before API routing. Auth endpoints are `/auth/csrf` and `/auth/me` (GET), plus `/auth/register`, `/auth/confirm-email`, `/auth/resend-confirmation`, `/auth/forgot-password`, `/auth/reset-password`, `/auth/login`, `/auth/refresh`, `/auth/logout`, and `/auth/switch-tenant` (POST). Cookie-changing requests require the `X-CSRF-TOKEN` header from `/auth/csrf`. Access/refresh tokens are returned only through HttpOnly cookies.
+
 | Module | Method | Endpoint | Auth Required |
 |--------|--------|----------|:---:|
-| User | `POST` | `/users` | ✅ (tenant_id) |
-| User | `GET` | `/users` | ✅ (tenant_id) |
-| User | `GET` | `/users/{id}` | ✅ (tenant_id) |
-| Order | `POST` | `/orders` | — |
-| Order | `GET` | `/orders` | — |
-| Order | `GET` | `/orders/{id}` | — |
-| Product | `POST` | `/products` | — |
-| Product | `GET` | `/products` | — |
-| Product | `GET` | `/products/{id}` | — |
-| DataSource | `POST` | `/datasources` | ✅ |
-| DataSource | `GET` | `/datasources` | ✅ |
-| DataSource | `DELETE` | `/datasources/{id}` | ✅ |
-| DataSource | `GET` | `/datasources/query/users` | ✅ |
+| User | `POST` | `/users` | Platform administrator |
+| User | `GET` | `/users` | Platform administrator |
+| User | `GET` | `/users/{id}` | Platform administrator |
+| Order | `POST` | `/orders` | Platform administrator |
+| Order | `GET` | `/orders` | Platform administrator |
+| Order | `GET` | `/orders/{id}` | Platform administrator |
+| Product | `POST` | `/products` | Platform administrator |
+| Product | `GET` | `/products` | Platform administrator |
+| Product | `GET` | `/products/{id}` | Platform administrator |
+| DataSource | `POST` | `/datasources` | Platform administrator |
+| DataSource | `GET` | `/datasources` | Platform administrator |
+| DataSource | `DELETE` | `/datasources/{id}` | Platform administrator |
+| DataSource | `GET` | `/datasources/query/users` | Platform administrator |
 
 ---
 
@@ -323,13 +254,6 @@ dotnet format src/ModularMonolith.slnx --no-restore --verify-no-changes --exclud
 
 `dotnet format` 不支援 IDE1006 命名規則的批次修正，因此保留既有的私有欄位命名提示（方案內 35 處），驗證指令僅排除此項；未排除時會回傳 exit code 2。其餘格式與可自動修正的樣式均納入檢查。
 
-`User.IntegrationTest` 目前未列入方案；其中 `TenantUserDbContextFactoryTests` 仍使用舊的三參數建構函式，獨立建置會出現兩處 CS1729。這是升級前即存在的測試問題。若要整理此專案的格式，另執行：
-
-```bash
-dotnet format src/modules/User/tests/User.IntegrationTest/User.IntegrationTest.csproj --no-restore
-dotnet format src/modules/User/tests/User.IntegrationTest/User.IntegrationTest.csproj --no-restore --verify-no-changes --exclude-diagnostics IDE1006
-```
-
 升級相容性依據：[Swashbuckle v10 遷移指南](https://github.com/domaindrivendev/Swashbuckle.AspNetCore/blob/master/docs/migrating-to-v10.md)、[MySQL EF Core 套件](https://www.nuget.org/packages/MySql.EntityFrameworkCore/10.0.9)、[EF Core 10 變更說明](https://learn.microsoft.com/en-us/ef/core/what-is-new/ef-core-10.0/breaking-changes)。資料庫驅動與 migration 模型以不連線的測試驗證；實際資料庫連線仍需在對應環境驗收。
 
 本次升級驗證：方案建置成功、45/45 測試通過；Swagger JSON、JWT Bearer 文件設定、Swagger UI 與 DataSource 未登入回傳 401 均通過。NuGet 查核未發現落後的直接套件或已知弱點（含間接相依套件）。
@@ -342,54 +266,35 @@ dotnet format src/modules/User/tests/User.IntegrationTest/User.IntegrationTest.c
 
 - .NET 10.0.401 SDK 或同 feature band 的較新修補版
 - SQL Server instance (for master DB and/or tenant DBs)
+- Node.js 24 or later and npm (for the React frontend)
 
-### 1. Configure Connection Strings
+### Backend configuration and startup
 
-Edit `src/apps/webapi/appsettings.json`:
+Use the Docker Compose procedure above for the complete runnable application. For an independently hosted API/seed, provide all settings from the [deployment runbook](docs/runbooks/auth-deployment.md): shared/Auth/tenant SQL connections, JWT signing key and key ID, public HTTPS frontend origin, tenant allowlist, DP certificate/key directory, and SMTP. Seed also needs the administrator credentials.
 
-```json
-"ConnectionStrings": {
-  "DefaultConnection": "Data Source=localhost;Initial Catalog=ModularMonolith;Integrated Security=SSPI;TrustServerCertificate=true"
-},
-"Jwt": {
-  "Issuer": "ModularMonolith",
-  "Audience": "ModularMonolith",
-  "Key": "YOUR_SECRET_KEY_AT_LEAST_32_CHARACTERS_LONG"
-},
-"Tenants": {
-  "tenant1": "Data Source=localhost;Initial Catalog=Tenant1DB;Integrated Security=SSPI;TrustServerCertificate=true"
-}
-```
-
-### 2. Run Migrations
+Run seed before API startup; it owns all migrations:
 
 ```bash
-cd src
-
-# Initial migrations are already checked in; apply them to the configured database.
-# Compose and Aspire run the seed utility automatically, so these commands are only
-# needed when running against your own SQL Server without either orchestrator.
-dotnet ef database update -p modules/User/Infrastructure        -s apps/webapi
-dotnet ef database update -p modules/Order/Infrastructure       -s apps/webapi
-dotnet ef database update -p modules/Product/Infrastructure     -s apps/webapi
-dotnet ef database update -p modules/DataSource/Infrastructure  -s apps/webapi
+dotnet run --project src/apps/seed
+dotnet run --project src/apps/webapi
 ```
 
-### 3. Run the API
+Swagger is available only in the Development environment. Browser calls use the frontend's same-origin `/api` proxy.
+### 5. Run the React Frontend
+
+From the repository root, in a separate terminal:
 
 ```bash
-cd src/apps/webapi
-dotnet run
+cd src/apps/web
+npm ci
+npm run dev
 ```
 
-Swagger UI is available at: `https://localhost:<port>/swagger`
+Open the HTTPS URL printed by Vite after configuring the shared local certificates and API proxy.
+The auth pages use the backend through `/api`. Run `npm run build` to type-check and create a
+production build, or `npm run lint` to check the code.
 
-### 4. Seed Sample Data
-
-```bash
-cd src/apps/seed
-dotnet run
-```
+See [the frontend README](src/apps/web/README.md) for more details.
 
 ---
 
@@ -434,7 +339,7 @@ src/modules/
 > These are known limitations of the demo — address them before any production use.
 
 - **Connection strings** for registered data sources are stored as plain text. Use [ASP.NET Core Data Protection](https://learn.microsoft.com/en-us/aspnet/core/security/data-protection/introduction) or Azure Key Vault to encrypt them.
-- The **JWT signing key** in `appsettings.json` is a placeholder. Store it in environment variables or a secrets manager.
+- The **JWT signing key** is required from deployment secrets; no signing key is checked into `appsettings.json`.
 - The `InMemoryTenantConnectionStringResolver` reads tenant config from `appsettings.json`. Replace with a **database-backed resolver** for dynamic tenant provisioning.
 - **External data source credentials** used by the multi-source query should have **read-only** database permissions.
-- **User endpoints** currently lack `RequireAuthorization()`, despite the intended JWT requirement described above. An unauthenticated `/users` request reaches tenant resolution and returns HTTP 500. This pre-existing behavior is separate from the package upgrade; add authorization and HTTP regression coverage before production use.
+- Existing business endpoints require the platform administrator policy; public registrations only access account capabilities. Identity accounts are separate from tenant business User profiles.

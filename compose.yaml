@@ -1,0 +1,138 @@
+name: modular-monolith
+
+x-application-environment: &application-environment
+  ASPNETCORE_ENVIRONMENT: Production
+  DOTNET_ENVIRONMENT: Production
+  ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=ModularMonolithDemo;User Id=sa;Password=${SQLSERVER_PASSWORD:?Run scripts/Initialize-LocalDeployment.ps1};Encrypt=True;TrustServerCertificate=True"
+  ConnectionStrings__AuthConnection: "Server=sqlserver,1433;Database=ModularMonolithAuth;User Id=sa;Password=${SQLSERVER_PASSWORD};Encrypt=True;TrustServerCertificate=True"
+  Tenants__tenant1: "Server=sqlserver,1433;Database=Tenant1DB;User Id=sa;Password=${SQLSERVER_PASSWORD};Encrypt=True;TrustServerCertificate=True"
+  Tenants__tenant2: "Server=sqlserver,1433;Database=Tenant2DB;User Id=sa;Password=${SQLSERVER_PASSWORD};Encrypt=True;TrustServerCertificate=True"
+  Jwt__Issuer: ModularMonolith
+  Jwt__Audience: ModularMonolith
+  Jwt__Key: "${JWT_KEY:?Run scripts/Initialize-LocalDeployment.ps1}"
+  Jwt__KeyId: "${JWT_KEY_ID:-local-1}"
+  Auth__FrontendUrl: "${FRONTEND_URL:-https://localhost:8443}"
+  Auth__DefaultTenantId: tenant1
+  Auth__Tenants__0__Id: tenant1
+  Auth__Tenants__0__Name: 主要工作空間
+  Auth__Tenants__1__Id: tenant2
+  Auth__Tenants__1__Name: 第二工作空間
+  Auth__SettingsFile: /app/config/authsettings.json
+  DataProtection__ApplicationName: "${DP_APPLICATION_NAME:-ModularMonolith.Auth.Local}"
+  DataProtection__KeyDirectory: /app/dpkeys
+  DataProtection__CertificatePath: /app/certificates/dataprotection.pfx
+  DataProtection__CertificatePassword: "${DP_CERTIFICATE_PASSWORD:?Run scripts/Initialize-LocalDeployment.ps1}"
+  Smtp__Host: mailpit
+  Smtp__Port: "1025"
+  Smtp__EnableSsl: "false"
+  Smtp__FromAddress: noreply@example.test
+  Smtp__FromName: Modular Monolith
+
+x-application-volumes: &application-volumes
+  - type: volume
+    source: dataprotection-keys
+    target: /app/dpkeys
+  - type: bind
+    source: ./artifacts/certificates/dataprotection
+    target: /app/certificates
+    read_only: true
+  - type: bind
+    source: ./artifacts/config
+    target: /app/config
+    read_only: true
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    container_name: modular-monolith_sqlserver_1
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: "${SQLSERVER_PASSWORD}"
+    ports:
+      - "127.0.0.1:14330:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: [CMD-SHELL, 'SQLCMDPASSWORD="$$MSSQL_SA_PASSWORD" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -C -b -Q "SELECT 1" -o /dev/null']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:v1.29.4
+    container_name: modular-monolith_mailpit_1
+    ports:
+      - "127.0.0.1:8025:8025"
+    restart: unless-stopped
+
+  seed:
+    build:
+      context: .
+      target: seed
+    container_name: modular-monolith_seed_1
+    environment:
+      <<: *application-environment
+      Seed__AdministratorEmail: "${ADMIN_EMAIL:-admin@example.test}"
+      Seed__AdministratorPassword: "${ADMIN_PASSWORD:?Run scripts/Initialize-LocalDeployment.ps1}"
+      Seed__AdministratorName: Platform administrator
+    volumes: *application-volumes
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    restart: "no"
+
+  webapi:
+    build:
+      context: .
+      target: webapi
+    container_name: modular-monolith_webapi_1
+    environment:
+      <<: *application-environment
+      ASPNETCORE_HTTP_PORTS: "8080"
+      AllowedHosts: localhost;127.0.0.1;webapi
+      ReverseProxy__KnownNetworks__0: "${COMPOSE_NETWORK_CIDR:-172.28.90.0/24}"
+      ReverseProxy__ForwardLimit: "1"
+      DOTNET_USE_POLLING_FILE_WATCHER: "1"
+    volumes: *application-volumes
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+      mailpit:
+        condition: service_started
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      target: frontend
+    container_name: modular-monolith_frontend_1
+    environment:
+      API_UPSTREAM: http://webapi:8080
+    ports:
+      - "127.0.0.1:8443:8443"
+    volumes:
+      - type: bind
+        source: ./artifacts/certificates/https
+        target: /etc/nginx/certificates
+        read_only: true
+    depends_on:
+      webapi:
+        condition: service_started
+    restart: unless-stopped
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: "${COMPOSE_NETWORK_CIDR:-172.28.90.0/24}"
+
+volumes:
+  sqlserver-data:
+    name: modular-monolith_sqlserver-data
+    external: true
+  dataprotection-keys:
+    name: modular-monolith_dataprotection-keys
+    external: true

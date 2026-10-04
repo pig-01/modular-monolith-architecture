@@ -14,5 +14,9 @@ public class JwtTenantProvider : ITenantProvider
 
     public JwtTenantProvider(IHttpContextAccessor httpContextAccessor) => _httpContextAccessor = httpContextAccessor;
 
-    public string? GetTenantId() => _httpContextAccessor.HttpContext?.User.FindFirstValue("tenant_id");
+    public string? GetTenantId()
+    {
+        var user = _httpContextAccessor.HttpContext?.User;
+        return user?.Identity?.IsAuthenticated == true ? user.FindFirstValue("tenant_id") : null;
+    }
 }
