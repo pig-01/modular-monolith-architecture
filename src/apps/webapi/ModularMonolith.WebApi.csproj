@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../../modules/Auth/Application/Auth.Application.csproj" />
     <ProjectReference Include="..\\..\\modules\\User\\Application\\User.Application.csproj" />
     <ProjectReference Include="..\\..\\modules\\Order\\Application\\Order.Application.csproj" />
     <ProjectReference Include="..\\..\\modules\\Product\\Application\\Product.Application.csproj" />

@@ -67,5 +67,12 @@
   </Folder>
   <Folder Name="/modules/User/tests/">
     <Project Path="modules/User/tests/User.UnitTest/User.UnitTest.csproj" />
+    <Project Path="modules/User/tests/User.IntegrationTest/User.IntegrationTest.csproj" />
+  </Folder>
+  <Folder Name="/modules/Auth/">
+    <Project Path="modules/Auth/Domain/Auth.Domain.csproj" />
+    <Project Path="modules/Auth/Infrastructure/Auth.Infrastructure.csproj" />
+    <Project Path="modules/Auth/Application/Auth.Application.csproj" />
+    <Project Path="modules/Auth/tests/Auth.Tests/Auth.Tests.csproj" />
   </Folder>
 </Solution>

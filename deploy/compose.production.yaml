@@ -1,0 +1,58 @@
+# Docker Compose 2.24.4+ override. Mailpit and database host ports are local-only.
+x-production-environment: &production-environment
+  Auth__FrontendUrl: "${FRONTEND_URL:?Set the public HTTPS origin}"
+  DataProtection__ApplicationName: "${DP_APPLICATION_NAME:?Set a fixed production-specific Data Protection application name}"
+  Smtp__Host: "${SMTP_HOST:?Set the production SMTP host}"
+  Smtp__Port: "${SMTP_PORT:-587}"
+  Smtp__EnableSsl: "true"
+  Smtp__Username: "${SMTP_USERNAME:?Set the SMTP username}"
+  Smtp__Password: "${SMTP_PASSWORD:?Set the SMTP password}"
+  Smtp__FromAddress: "${SMTP_FROM_ADDRESS:?Set the sender email}"
+  Smtp__FromName: "${SMTP_FROM_NAME:-Modular Monolith}"
+
+x-production-mounts: &production-mounts
+  - type: bind
+    source: "${CERTIFICATE_DIRECTORY:?Set the operator certificate directory}/dataprotection"
+    target: /app/certificates
+    read_only: true
+  - type: bind
+    source: "${SETTINGS_DIRECTORY:?Set the operator settings directory}"
+    target: /app/config
+    read_only: true
+
+services:
+  sqlserver:
+    environment:
+      MSSQL_PID: "${MSSQL_PID:?Set the appropriate SQL Server edition or license}"
+    ports: !reset []
+
+  mailpit:
+    profiles: [local-mail]
+
+  seed:
+    environment:
+      <<: *production-environment
+      Seed__AdministratorEmail: "${ADMIN_EMAIL:?Set the administrator email}"
+    volumes: *production-mounts
+
+  webapi:
+    environment:
+      <<: *production-environment
+      AllowedHosts: "${PUBLIC_HOSTNAME:?Set the public frontend hostname};webapi"
+    volumes: *production-mounts
+    depends_on: !override
+      seed:
+        condition: service_completed_successfully
+
+  frontend:
+    ports: !override
+      - "${HTTPS_BIND_ADDRESS:-0.0.0.0}:${HTTPS_PORT:-443}:8443"
+    volumes:
+      - type: bind
+        source: "${CERTIFICATE_DIRECTORY}/https"
+        target: /etc/nginx/certificates
+        read_only: true
+
+volumes:
+  dataprotection-keys:
+    name: "${DP_KEY_VOLUME:?Set a dedicated production Data Protection volume}"

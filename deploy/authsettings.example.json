@@ -1,0 +1,9 @@
+{
+  "Auth": {
+    "Lifetimes": {
+      "AccessTokenMinutes": 15,
+      "SessionDays": 7,
+      "RefreshReplaySeconds": 30
+    }
+  }
+}

@@ -1,3 +1,4 @@
+using Auth.Application;
 using DataSource.Application;
 using DataSource.Application.Commands;
 using DataSource.Application.Queries;
@@ -9,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ModularMonolith.WebApi;
 using Order.Application;
@@ -101,6 +103,8 @@ public class MediatorTests
             mediator.Send(new PlaceOrderCommand(Guid.Empty, [])).AsTask());
         await Assert.ThrowsAsync<ValidationException>(() =>
             mediator.Send(new RegisterDataSourceCommand(Guid.Empty, "", ProviderType.MSSQL, "")).AsTask());
+        await Assert.ThrowsAsync<AuthProblem>(() =>
+            mediator.Send(new RegisterCommand(new RegisterRequest("", "invalid", "short"))).AsTask());
 
         Assert.Empty(await services.GetRequiredService<UserDbContext>().Users.ToListAsync());
         Assert.Empty(await services.GetRequiredService<ProductDbContext>().Products.ToListAsync());
@@ -153,18 +157,26 @@ public class MediatorTests
 
     private static ServiceProvider BuildProvider(EventLog? log = null)
     {
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["ConnectionStrings:DefaultConnection"] = "Server=unused;Database=unused"
-            }).Build();
-        ServiceCollection services = new();
-        services.AddSingleton<IConfiguration>(configuration);
+        var host = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings { EnvironmentName = "Testing" });
+        host.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["ConnectionStrings:DefaultConnection"] = "Server=unused;Database=unused",
+            ["ConnectionStrings:AuthConnection"] = "Server=unused;Database=unused-auth",
+            ["Jwt:Key"] = "mediator-test-only-signing-key-0123456789abcdef",
+            ["Auth:FrontendUrl"] = "https://localhost",
+            ["Auth:DefaultTenantId"] = "tenant1",
+            ["Auth:Tenants:0:Id"] = "tenant1",
+            ["Auth:Tenants:0:Name"] = "Tenant One",
+            ["DataProtection:KeyDirectory"] = Path.Combine(Path.GetTempPath(), "modular-monolith-mediator-tests")
+        });
+        var services = host.Services;
         services.AddLogging(builder => builder.AddProvider(log ?? new EventLog()));
-        services.AddUserModule(configuration);
-        services.AddProductModule(configuration);
-        services.AddOrderModule(configuration);
-        services.AddDataSourceModule(configuration);
+        services.AddRouting();
+        services.AddAuthModule(host.Configuration, host.Environment);
+        services.AddUserModule(host.Configuration);
+        services.AddProductModule(host.Configuration);
+        services.AddOrderModule(host.Configuration);
+        services.AddDataSourceModule(host.Configuration);
         services.AddApplicationMediator();
 
         // Replace only database services: exercise the production mediator and module pipelines.

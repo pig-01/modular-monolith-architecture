@@ -1,0 +1,33 @@
+:root {
+  font-family: Inter, 'Segoe UI', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+  color: #203b34;
+  background: #f7f8f4;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --ink: #203b34;
+  --muted: #738079;
+  --green: #235c48;
+  --line: #dfe5dd;
+}
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; }
+a { color: var(--green); text-underline-offset: 4px; }
+a:hover { color: #133d2d; }
+button, input, select { font: inherit; }
+button, a, input, select { -webkit-tap-highlight-color: transparent; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: .58; }
+:focus-visible { outline: 3px solid #8dac61; outline-offset: 4px; }
+h1, h2, p { margin-top: 0; }
+h1 { font-size: clamp(1.8rem, 3vw, 2.25rem); font-weight: 650; letter-spacing: -.045em; line-height: 1.35; margin-bottom: 14px; }
+h2 { font-size: 1.15rem; font-weight: 600; }
+p { line-height: 1.8; }
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+input, select { width: 100%; min-height: 49px; padding: 12px 14px; border: 1px solid #cfd7cf; border-radius: 7px; background: #fff; color: var(--ink); transition: border-color .15s; }
+input:hover, select:hover { border-color: #7b9686; }
+input[aria-invalid='true'] { border-color: #b8483c; }
+label { display: block; font-size: .88rem; font-weight: 550; margin-bottom: 9px; }
+button { border: 0; border-radius: 7px; }
+footer { color: #89928b; font-size: .72rem; text-align: center; letter-spacing: .02em; padding: 24px; }
+footer span { margin: 0 8px; }
