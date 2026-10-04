@@ -12,8 +12,8 @@
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.Docker" />
     <PackageReference Include="Aspire.Hosting.SqlServer" />
-    <ProjectReference Include="..\apps\seed\ModularMonolith.Seed.csproj" />
-    <ProjectReference Include="..\apps\webapi\ModularMonolith.WebApi.csproj" />
+    <ProjectReference Include="..\seed\ModularMonolith.Seed.csproj" />
+    <ProjectReference Include="..\webapi\ModularMonolith.WebApi.csproj" />
   </ItemGroup>
 
 </Project>
